@@ -6,9 +6,9 @@
 const CACHE_NAME = 'qr-code-gen-v1'
 
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  '/QR-Code-Gen/',
+  '/QR-Code-Gen/index.html',
+  '/QR-Code-Gen/manifest.json',
 ]
 
 // Install: cache static assets
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Offline fallback: return index.html for navigation requests
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html')
+          return caches.match('/QR-Code-Gen/index.html')
         }
       })
     })

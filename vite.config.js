@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/qr-code-gen/',
+  base: '/QR-Code-Gen/',
   root: '.',
   publicDir: 'public',
   build: {
