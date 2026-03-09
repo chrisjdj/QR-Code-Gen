@@ -197,6 +197,7 @@ textarea.control-input {
 }
 
 .checkbox-label {
+  position: relative;
   display: flex;
   align-items: center;
   gap: $space-3;
