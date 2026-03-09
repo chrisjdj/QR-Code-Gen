@@ -1,4 +1,4 @@
-# 🔲 QR Code Gen
+# QR Code Gen  ![Deploy](https://github.com/chrisjdj/QR-Code-Gen/actions/workflows/deploy.yml/badge.svg)
 
 A **100% client-side**, privacy-first QR Code Generator built with **Vanilla JS**, **SCSS**, and **Vite**. No backend. No tracking. No data leaves your browser.
 
