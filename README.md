@@ -6,6 +6,11 @@ A **100% client-side**, privacy-first QR Code Generator built with **Vanilla JS*
 
 ---
 
+https://github.com/user-attachments/assets/a26d9442-5e54-48c6-90f8-db8e69c7df37
+
+---
+
+
 ## ✨ Features
 
 - **12 QR types** — URL, Text, Email, Phone, SMS, WhatsApp, WiFi, vCard, Location, Calendar, Crypto, and raw payloads
