@@ -54,7 +54,6 @@ The app runs at `http://localhost:5173`.
 ## 🎨 Styling Rules
 
 > **IMPORTANT:** All styles must be written in **SCSS** (`.scss` files only).  
-> Do **not** write or modify any `.css` files directly.
 
 - Design tokens (colors, spacing, typography) live in `src/styles/_variables.scss`
 - Component styles have their own partial files (e.g., `_forms.scss`, `_buttons.scss`, `_footer.scss`)
