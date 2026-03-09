@@ -1,7 +1,6 @@
 # 📄 Product Requirements Specification (PRS)
 
 ## Project: QR Code Gen
-## Developed by: [Antigravity](https://antigravity.google/) (AI Agent)
 
 ## Type: 100% Client-Side Web Application
 

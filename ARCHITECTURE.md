@@ -1,6 +1,6 @@
 # Client-Side Architecture
 
-The QR Code Gen is built as a **100% client-side application**, developed entirely using **Antigravity**. It requires no server-side processing for QR generation, image manipulation, or exporting.
+The QR Code Gen is built as a **100% client-side application**. It requires no server-side processing for QR generation, image manipulation, or exporting.
 
 This document explains the high-level architecture, module structure, and data flow of the application.
 
