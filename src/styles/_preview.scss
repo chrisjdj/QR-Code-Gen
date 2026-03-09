@@ -1,0 +1,191 @@
+// =============================================
+// QR Code Gen – Preview Panel (Right Side)
+// =============================================
+
+@use 'variables' as *;
+@use 'sass:color';
+
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: $color-bg;
+  padding: $space-6;
+  gap: $space-6;
+  overflow-y: auto;
+
+  scrollbar-width: thin;
+  scrollbar-color: $color-surface-3 transparent;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb {
+    background: $color-surface-3;
+    border-radius: $radius-full;
+  }
+
+  &.dark-scan-mode {
+    background: #0a0a0a;
+    .preview-frame {
+      background: white;
+      box-shadow: 0 0 0 12px #111, $shadow-lg;
+    }
+  }
+
+  // Tablet: appear on top
+  @media (max-width: 900px) {
+    padding: $space-4;
+    order: 1;
+    min-height: 320px;
+    overflow-y: visible;
+  }
+
+  // Mobile
+  @media (max-width: 600px) {
+    padding: $space-3;
+    gap: $space-3;
+    min-height: 260px;
+  }
+}
+
+// Scan Mode Toggle
+.scan-mode-bar {
+  display: flex;
+  gap: $space-2;
+  background: $color-surface-2;
+  border: 1px solid $color-border;
+  border-radius: $radius-full;
+  padding: 3px;
+  align-self: center;
+}
+
+.scan-mode-btn {
+  padding: $space-1 $space-4;
+  border-radius: $radius-full;
+  font-size: $text-sm;
+  font-weight: $font-medium;
+  color: $color-text-muted;
+  transition: all $transition-fast;
+
+  &.active {
+    background: $color-surface-3;
+    color: $color-text;
+    box-shadow: $shadow-sm;
+  }
+}
+
+// QR Preview Frame
+.preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+  min-height: 280px;
+
+  @media (max-width: 900px) {
+    min-height: 240px;
+    flex: none;
+  }
+
+  @media (max-width: 600px) {
+    min-height: 200px;
+  }
+}
+
+.preview-frame {
+  position: relative;
+  background: white;
+  border-radius: $radius-xl;
+  padding: $space-6;
+  box-shadow:
+    0 0 0 1px var(--preview-border),
+    $shadow-lg,
+    $shadow-glow;
+  transition: background $transition-slow, box-shadow $transition-slow;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 240px;
+  min-height: 240px;
+
+  @media (max-width: 600px) {
+    padding: $space-4;
+    min-width: 200px;
+    min-height: 200px;
+  }
+
+  #qrCanvas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    canvas, svg { border-radius: $radius-sm; }
+  }
+}
+
+// Placeholder shown before QR is generated
+.preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-3;
+  color: $color-surface-3;
+  text-align: center;
+
+  p {
+    font-size: $text-sm;
+    color: $color-text-subtle;
+  }
+}
+
+// Alert Area
+.alert-area {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-2;
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $text-sm;
+  line-height: 1.5;
+  animation: alertIn $transition-base forwards;
+
+  svg { flex-shrink: 0; margin-top: 2px; }
+
+  &.alert-warning {
+    background: rgba($color-warning, 0.1);
+    border: 1px solid rgba($color-warning, 0.3);
+    color: color-mix(in srgb, $color-warning 70%, var(--color-text));
+  }
+
+  &.alert-danger {
+    background: rgba($color-danger, 0.1);
+    border: 1px solid rgba($color-danger, 0.3);
+    color: color-mix(in srgb, $color-danger 70%, var(--color-text));
+  }
+
+  &.alert-success {
+    background: rgba($color-success, 0.1);
+    border: 1px solid rgba($color-success, 0.3);
+    color: color-mix(in srgb, $color-success 70%, var(--color-text));
+  }
+
+  &.alert-info {
+    background: rgba($color-info, 0.1);
+    border: 1px solid rgba($color-info, 0.3);
+    color: color-mix(in srgb, $color-info 70%, var(--color-text));
+  }
+}
+
+@keyframes alertIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+

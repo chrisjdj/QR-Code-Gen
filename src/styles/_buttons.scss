@@ -1,0 +1,66 @@
+// =============================================
+// QR Code Gen – Buttons
+// =============================================
+
+@use 'variables' as *;
+
+// Export Buttons
+.export-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  font-size: $text-sm;
+  font-weight: $font-semibold;
+  background: $color-surface-3;
+  border: 1px solid $color-border;
+  color: $color-text-muted;
+  transition: all $transition-fast;
+  white-space: nowrap;
+
+  &:hover {
+    background: $color-surface-2;
+    border-color: $color-border-hover;
+    color: $color-text;
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+  }
+
+  &:active { transform: translateY(0); }
+
+  svg { flex-shrink: 0; }
+
+  &.primary {
+    background: $color-accent-grad;
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 2px 12px rgba($color-accent-1, 0.3);
+
+    &:hover {
+      box-shadow: 0 4px 20px rgba($color-accent-1, 0.5);
+      transform: translateY(-2px);
+      color: white;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+// Icon Button
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-md;
+  transition: all $transition-fast;
+
+  &:hover { opacity: 0.8; }
+  &:focus-visible { outline: 2px solid $color-accent-1; outline-offset: 2px; }
+}

@@ -1,0 +1,144 @@
+// =============================================
+// QR Code Gen – App Layout
+// =============================================
+
+@use 'variables' as *;
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+
+  @media (max-width: 900px) {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  min-height: $header-height;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $space-3 $space-6;
+  background: var(--header-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid $color-border;
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+  }
+
+  .brand-icon {
+    color: $color-accent-1;
+    display: flex;
+    align-items: center;
+    filter: drop-shadow(0 0 8px rgba($color-accent-1, 0.5));
+  }
+
+  .brand-name {
+    font-size: $text-lg;
+    font-weight: $font-bold;
+    background: $color-accent-grad;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+  }
+
+  .brand-badge {
+    font-size: $text-xs;
+    font-weight: $font-medium;
+    color: $color-accent-1;
+    background: rgba($color-accent-1, 0.12);
+    border: 1px solid rgba($color-accent-1, 0.25);
+    padding: 2px $space-2;
+    border-radius: $radius-full;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+  }
+
+  .privacy-badge {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    font-size: $text-xs;
+    color: $color-text-muted;
+    background: rgba($color-success, 0.08);
+    border: 1px solid rgba($color-success, 0.2);
+    padding: 4px $space-3;
+    border-radius: $radius-full;
+
+    svg { color: $color-success; }
+  }
+
+  // Tablet
+  @media (max-width: 900px) {
+    padding: $space-4 $space-5;
+    flex-wrap: wrap;
+    gap: $space-3;
+  }
+
+  // Mobile
+  @media (max-width: 600px) {
+    padding: $space-4 $space-4;
+    gap: $space-2;
+
+    .brand-badge {
+      display: none;
+    }
+
+    .privacy-badge {
+      font-size: 0;
+      padding: 6px;
+      gap: 0;
+      svg { width: 14px; height: 14px; }
+    }
+  }
+}
+
+.app-main {
+  display: grid;
+  grid-template-columns: $sidebar-width 1fr;
+  gap: 0;
+  // Key fixes to allow sidebar scroll
+  flex: 1;
+  min-height: 0;
+
+  & > * {
+    min-height: 0;
+    overflow-y: auto;
+    height: 100%;
+  }
+
+  // Tablet: single column, preview on top
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+    overflow-y: auto;
+
+    & > * {
+      overflow-y: visible;
+      height: auto;
+    }
+  }
+
+  // Mobile
+  @media (max-width: 600px) {
+    min-height: 0;
+  }
+}

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://chrisjdj.github.io/qr-code-gen/sitemap.xml

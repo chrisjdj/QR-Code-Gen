@@ -1,0 +1,19 @@
+// =============================================
+// QR Code Gen – Main SCSS Entry
+// =============================================
+
+// 1. Design tokens (must be first)
+@use 'variables' as *;
+
+// 2. Base reset
+@use 'reset';
+
+// 3. Layout
+@use 'layout';
+
+// 4. Components
+@use 'sidebar';
+@use 'preview';
+@use 'forms';
+@use 'buttons';
+@use 'footer';

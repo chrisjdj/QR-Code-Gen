@@ -1,0 +1,81 @@
+@use 'variables' as *;
+
+.seo-footer {
+  margin-top: $space-12;
+  padding: $space-12 $space-6;
+  background-color: $color-bg;
+  border-top: 1px solid $color-border;
+  color: $color-text-muted;
+  font-family: $font-sans;
+
+  .footer-container {
+    max-width: 1000px;
+    margin: 0 auto;
+
+    h2 {
+      color: $color-text;
+      font-size: $text-2xl;
+      margin-bottom: $space-4;
+      font-weight: $font-bold;
+    }
+
+    h3 {
+      color: $color-text;
+      font-size: $text-xl;
+      margin-top: $space-8;
+      margin-bottom: $space-2;
+      font-weight: $font-semibold;
+    }
+
+    p {
+      line-height: 1.6;
+      margin-bottom: $space-4;
+      font-size: $text-base;
+    }
+    
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+      margin-bottom: $space-6;
+      
+      li {
+        position: relative;
+        padding-left: $space-5;
+        margin-bottom: $space-2;
+        font-size: $text-base;
+        line-height: 1.5;
+        
+        &::before {
+          content: '•';
+          position: absolute;
+          left: 0;
+          color: $color-accent-1;
+          font-weight: bold;
+        }
+        
+        strong {
+          color: $color-text;
+        }
+      }
+    }
+
+    .footer-bottom {
+      margin-top: $space-12;
+      padding-top: $space-6;
+      border-top: 1px solid $color-border;
+      text-align: center;
+      font-size: $text-sm;
+      color: $color-text-subtle;
+    }
+  }
+}
+
+.noscript-banner {
+  background-color: $color-warning;
+  color: #000;
+  padding: $space-4;
+  text-align: center;
+  font-weight: $font-medium;
+  margin-bottom: $space-8;
+  border-radius: $radius-md;
+}
