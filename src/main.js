@@ -587,13 +587,22 @@ function initScanMode() {
     document.body.classList.add('light-mode')
     document.getElementById('lightMode')?.classList.add('active')
     document.getElementById('darkMode')?.classList.remove('active')
+    localStorage.setItem('theme', 'light')
   })
   document.getElementById('darkMode')?.addEventListener('click', () => {
     document.getElementById('previewPanel')?.classList.add('dark-scan-mode')
     document.body.classList.remove('light-mode')
     document.getElementById('darkMode')?.classList.add('active')
     document.getElementById('lightMode')?.classList.remove('active')
+    localStorage.setItem('theme', 'dark')
   })
+
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.getElementById('darkMode')?.click();
+  } else if (savedTheme === 'light') {
+    document.getElementById('lightMode')?.click();
+  }
 }
 
 // ─── Export ───────────────────────────────────────────────────────────────────

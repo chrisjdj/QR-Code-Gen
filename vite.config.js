@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import obfuscator from 'vite-plugin-javascript-obfuscator'
 
 export default defineConfig({
-  base: '/QR-Code-Gen/',
+  base: '/web-tools/QR-Code-Gen/',
   root: '.',
   publicDir: 'public',
   plugins: [
