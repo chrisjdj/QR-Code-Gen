@@ -81,11 +81,11 @@ const FORMS = {
   },
   calendar: {
     fields: [
-      { id: 'title',       label: 'Event Title',     type: 'text',           placeholder: 'Team Meeting', required: true },
+      { id: 'title',       label: 'Event Title',     type: 'text',           placeholder: 'Team Meeting', required: true, maxLength: 100 },
       { id: 'start',       label: 'Start Date/Time', type: 'datetime-local', required: true },
       { id: 'end',         label: 'End Date/Time',   type: 'datetime-local' },
-      { id: 'location',    label: 'Location',        type: 'text',           placeholder: 'Conference Room A' },
-      { id: 'description', label: 'Description',     type: 'textarea',       placeholder: 'Event details...' },
+      { id: 'location',    label: 'Location',        type: 'text',           placeholder: 'Conference Room A', maxLength: 100 },
+      { id: 'description', label: 'Description',     type: 'textarea',       placeholder: 'Event details...', maxLength: 1000 },
     ],
   },
   crypto: {
@@ -298,7 +298,7 @@ function onFormChange(e) {
 }
 
 // ─── Render Core ─────────────────────────────────────────────────────────────
-function triggerRender() {
+async function triggerRender() {
   const values  = getFormValues()
   const payload = buildPayload(state.type, values)
 
@@ -308,6 +308,9 @@ function triggerRender() {
   }
 
   const opts = getDesignOptions()
+  if (opts.logo) {
+    opts.processedLogo = await processLogo(opts.logo, opts.logoBgColor, opts.logoRounded, opts.logoShadow)
+  }
   renderQR(payload, opts)
 }
 
@@ -341,7 +344,93 @@ function getDesignOptions() {
     logo: state.logo,
     logoSize:   parseFloat(document.getElementById('logoSize')?.value   || 30) / 100,
     logoMargin: parseInt(document.getElementById('logoMargin')?.value || 5),
+    logoBgColor: document.getElementById('logoBgColor')?.value || '#ffffff',
+    logoRounded: document.getElementById('logoRounded')?.checked || false,
+    logoShadow: document.getElementById('logoShadow')?.checked || false,
   }
+}
+
+// ─── Logo Processing ─────────────────────────────────────────────────────────
+function processLogo(src, bgColor, rounded, shadow) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const aspect = img.width / img.height
+      let drawW, drawH
+      if (aspect > 1) {
+        drawW = 800
+        drawH = 800 / aspect
+      } else {
+        drawH = 800
+        drawW = 800 * aspect
+      }
+
+      const bgSize = 1000
+      const padding = shadow ? 80 : 0
+      canvas.width = bgSize + padding * 2
+      canvas.height = bgSize + padding * 2
+      
+      const ctx = canvas.getContext('2d')
+      const cx = canvas.width / 2
+      const cy = canvas.height / 2
+
+      if (shadow) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'
+        ctx.shadowBlur = 30
+        ctx.shadowOffsetY = 15
+      }
+
+      if (bgColor !== 'transparent') {
+        ctx.fillStyle = bgColor
+      } else {
+        ctx.fillStyle = 'rgba(0,0,0,0)'
+      }
+
+      const bgX = cx - bgSize / 2
+      const bgY = cy - bgSize / 2
+
+      if (rounded) {
+        const r = bgSize * 0.2
+        ctx.beginPath()
+        ctx.moveTo(bgX + r, bgY)
+        ctx.arcTo(bgX + bgSize, bgY, bgX + bgSize, bgY + bgSize, r)
+        ctx.arcTo(bgX + bgSize, bgY + bgSize, bgX, bgY + bgSize, r)
+        ctx.arcTo(bgX, bgY + bgSize, bgX, bgY, r)
+        ctx.arcTo(bgX, bgY, bgX + bgSize, bgY, r)
+        ctx.closePath()
+        ctx.fill()
+        
+        if (bgColor === 'transparent' || !bgColor) {
+           ctx.save()
+           ctx.beginPath()
+           ctx.moveTo(bgX + r, bgY)
+           ctx.arcTo(bgX + bgSize, bgY, bgX + bgSize, bgY + bgSize, r)
+           ctx.arcTo(bgX + bgSize, bgY + bgSize, bgX, bgY + bgSize, r)
+           ctx.arcTo(bgX, bgY + bgSize, bgX, bgY, r)
+           ctx.arcTo(bgX, bgY, bgX + bgSize, bgY, r)
+           ctx.closePath()
+           ctx.clip()
+           ctx.drawImage(img, cx - drawW / 2, cy - drawH / 2, drawW, drawH)
+           ctx.restore()
+           resolve(canvas.toDataURL('image/png'))
+           return
+        }
+      } else {
+        ctx.fillRect(bgX, bgY, bgSize, bgSize)
+      }
+
+      ctx.shadowColor = 'transparent'
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetY = 0
+
+      ctx.drawImage(img, cx - drawW / 2, cy - drawH / 2, drawW, drawH)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => resolve(src)
+    img.src = src
+  })
 }
 
 function renderQR(data, opts) {
@@ -383,7 +472,7 @@ function renderQR(data, opts) {
     cornersSquareOptions: { type: eyeSquareType, color: opts.fgColor },
     cornersDotOptions:    { type: eyeDotType,    color: opts.fgColor },
     backgroundOptions:    { color: opts.bgColor },
-    image: opts.logo || undefined,
+    image: opts.processedLogo || opts.logo || undefined,
     imageOptions: {
       hideBackgroundDots: true,
       imageSize: opts.logo ? opts.logoSize : 0.3,
@@ -402,6 +491,12 @@ function renderQR(data, opts) {
     placeholder?.classList.add('hidden')
   } catch (err) {
     console.error('[QR] render error:', err)
+    const msg = String(err.message || err)
+    if (msg.includes('code length overflow')) {
+      showAlert('Content too long for the selected QR Version or settings. Try reducing text, lowering Error Correction, or using Auto Version.', 'warning')
+    } else {
+      showAlert('Failed to render QR Code. Please check your inputs.', 'danger')
+    }
   }
 }
 
@@ -631,6 +726,10 @@ async function exportAs(format) {
   const dpi  = getExportDpi()
   const opts = buildExportOptions(size)
 
+  if (opts.logo) {
+    opts.processedLogo = await processLogo(opts.logo, opts.logoBgColor, opts.logoRounded, opts.logoShadow)
+  }
+
   let dotsOptions
   if (opts.gradient?.enabled) {
     dotsOptions = {
@@ -659,7 +758,7 @@ async function exportAs(format) {
     cornersSquareOptions: { type: eyeSquareType, color: opts.fgColor },
     cornersDotOptions:    { type: eyeDotType,    color: opts.fgColor },
     backgroundOptions:    { color: opts.bgColor },
-    image: opts.logo || undefined,
+    image: opts.processedLogo || opts.logo || undefined,
     imageOptions: {
       hideBackgroundDots: true,
       imageSize: opts.logo ? opts.logoSize : 0.3,
@@ -774,6 +873,171 @@ function initExportButtons() {
   })
 }
 
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+function showAlert(message, type = 'info') {
+  const container = document.getElementById('alertArea')
+  if (!container) return
+  const alert = document.createElement('div')
+  alert.className = `alert alert-${type}`
+  
+  let icon = ''
+  if (type === 'success') icon = '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>'
+  else if (type === 'warning') icon = '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>'
+  else if (type === 'danger') icon = '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>'
+  else icon = '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>'
+
+  alert.innerHTML = `${icon}<span>${message}</span>`
+  container.appendChild(alert)
+  
+  setTimeout(() => {
+    alert.style.opacity = '0'
+    alert.style.transform = 'translateY(-6px)'
+    alert.style.transition = 'all 0.3s'
+    setTimeout(() => alert.remove(), 300)
+  }, 5000)
+}
+
+// ─── Share Configuration ──────────────────────────────────────────────────────
+function initShareConfig() {
+  document.getElementById('shareLinkBtn')?.addEventListener('click', async () => {
+    try {
+      const config = {
+        type: state.type,
+        form: getFormValues(),
+        design: {
+          fgColor: document.getElementById('fgColor')?.value,
+          bgColor: document.getElementById('bgColor')?.value,
+          transparentBg: document.getElementById('transparentBg')?.checked,
+          dotStyle: document.querySelector('[data-dot].active')?.dataset?.dot,
+          eyeStyle: document.querySelector('[data-eye].active')?.dataset?.eye,
+          ecLevel: document.getElementById('ecLevel')?.value,
+          qrVersion: document.getElementById('qrVersion')?.value,
+          enableGradient: document.getElementById('enableGradient')?.checked,
+          gradientType: document.getElementById('gradientType')?.value,
+          gradientAngle: document.getElementById('gradientAngle')?.value,
+          gradientColor1: document.getElementById('gradientColor1')?.value,
+          gradientColor2: document.getElementById('gradientColor2')?.value,
+          logoSize: document.getElementById('logoSize')?.value,
+          logoMargin: document.getElementById('logoMargin')?.value,
+          logoRounded: document.getElementById('logoRounded')?.checked,
+          logoShadow: document.getElementById('logoShadow')?.checked,
+          logoBgColor: document.getElementById('logoBgColor')?.value,
+        },
+        hasLogo: !!state.logo
+      }
+      
+      const hash = btoa(unescape(encodeURIComponent(JSON.stringify(config))))
+      const url = new URL(window.location.href)
+      url.search = `?config=${hash}`
+      
+      await navigator.clipboard.writeText(url.toString())
+      showAlert('Shareable link copied to clipboard!', 'success')
+      if (state.logo) {
+        showAlert('Your custom logo is not included in the shareable link due to size limits. It will need to be re-uploaded.', 'warning')
+      }
+    } catch (err) {
+      console.error('[Share] Failed to copy link:', err)
+      showAlert('Failed to copy shareable link.', 'danger')
+    }
+  })
+}
+
+function applySharedConfig() {
+  const params = new URLSearchParams(window.location.search)
+  const configHash = params.get('config')
+  if (!configHash) return false
+
+  try {
+    const config = JSON.parse(decodeURIComponent(escape(atob(configHash))))
+    
+    // 1. Set type and prepare form values for rendering
+    if (config.type) {
+      state.type = config.type
+      
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'))
+      const activeBtn = document.querySelector(`[data-type="${config.type}"]`)
+      if (activeBtn) activeBtn.classList.add('active')
+      
+      if (config.form) {
+        localStorage.setItem(`qr_${config.type}`, JSON.stringify(config.form))
+      }
+    }
+
+    // 2. Map design values back to DOM
+    if (config.design) {
+      const setVal = (id, val) => {
+        const el = document.getElementById(id)
+        if (el && val !== undefined) {
+          if (el.type === 'checkbox') el.checked = val
+          else el.value = val
+          
+          const textEl = document.getElementById(`${id}Text`)
+          if (textEl && el.type === 'color') textEl.value = val
+        }
+      }
+
+      setVal('fgColor', config.design.fgColor)
+      setVal('bgColor', config.design.bgColor)
+      setVal('transparentBg', config.design.transparentBg)
+      
+      if (config.design.dotStyle) {
+        document.querySelectorAll('[data-dot]').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false') })
+        const btn = document.querySelector(`[data-dot="${config.design.dotStyle}"]`)
+        if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true') }
+      }
+
+      if (config.design.eyeStyle) {
+        document.querySelectorAll('[data-eye]').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false') })
+        const btn = document.querySelector(`[data-eye="${config.design.eyeStyle}"]`)
+        if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true') }
+      }
+
+      setVal('ecLevel', config.design.ecLevel)
+      setVal('qrVersion', config.design.qrVersion)
+      setVal('enableGradient', config.design.enableGradient)
+      setVal('gradientType', config.design.gradientType)
+      setVal('gradientAngle', config.design.gradientAngle)
+      setVal('gradientColor1', config.design.gradientColor1)
+      setVal('gradientColor2', config.design.gradientColor2)
+      setVal('logoSize', config.design.logoSize)
+      setVal('logoMargin', config.design.logoMargin)
+      setVal('logoRounded', config.design.logoRounded)
+      setVal('logoShadow', config.design.logoShadow)
+      setVal('logoBgColor', config.design.logoBgColor)
+
+      // Sync specific interdependent UI groups
+      document.getElementById('bgColor').disabled = !!config.design.transparentBg
+      document.getElementById('bgColorText').disabled = !!config.design.transparentBg
+      const gradControls = document.getElementById('gradientControls')
+      if (gradControls) gradControls.classList.toggle('hidden', !config.design.enableGradient)
+      const angleGroup = document.getElementById('gradientAngleGroup')
+      if (angleGroup && config.design.gradientType) angleGroup.style.display = config.design.gradientType === 'radial' ? 'none' : ''
+      const angleVal = document.getElementById('gradientAngleVal')
+      if (angleVal && config.design.gradientAngle !== undefined) angleVal.textContent = config.design.gradientAngle
+      const logoSizeVal = document.getElementById('logoSizeVal')
+      if (logoSizeVal && config.design.logoSize !== undefined) logoSizeVal.textContent = config.design.logoSize
+      const logoMarginVal = document.getElementById('logoMarginVal')
+      if (logoMarginVal && config.design.logoMargin !== undefined) logoMarginVal.textContent = config.design.logoMargin
+    }
+
+    // Clean up URL to avoid a persistent massive hash that users might save by accident
+    window.history.replaceState({}, document.title, window.location.pathname)
+
+    // Alert about logo missing if applicable immediately after load
+    if (config.hasLogo) {
+      setTimeout(() => {
+        showAlert('The shared QR code originally included a custom logo. Please upload it again to fully restore the configuration.', 'warning')
+      }, 500)
+    }
+    
+    return true
+  } catch (err) {
+    console.error('[Share] restore error:', err)
+    showAlert('Failed to load shared configuration. The link might be invalid.', 'danger')
+    return false
+  }
+}
+
 // ─── PWA ─────────────────────────────────────────────────────────────────────
 function registerSW() {
   if ('serviceWorker' in navigator) {
@@ -791,7 +1055,17 @@ function init() {
   initLogoHandler()
   initScanMode()
   initExportButtons()
-  renderForm(state.type)  // Mount default URL form
+  initShareConfig()
+  
+  const didRestore = applySharedConfig()
+  
+  renderForm(state.type)  // Mount default URL form, or the restored type
+
+  if (didRestore) {
+    // Slight delay to ensure DOM bindings and inputs are 100% applied
+    setTimeout(triggerRender, 150)
+  }
+  
   registerSW()
 }
 
