@@ -175,6 +175,8 @@ textarea.control-input {
   &:focus {
     outline: none;
   }
+
+  &.invalid { color: $color-danger; }
 }
 
 .control-row-labels {
@@ -298,50 +300,6 @@ textarea.control-input {
   }
 }
 
-.export-btn {
-  flex: 1;
-  min-width: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: $space-2;
-  padding: $space-2 $space-4;
-  background: $color-surface-3;
-  border: 1px solid $color-border;
-  border-radius: $radius-md;
-  color: $color-text-muted;
-  font-size: $text-sm;
-  font-weight: $font-bold;
-  transition: all $transition-fast;
-  cursor: pointer;
-
-  svg { 
-    opacity: 0.7;
-    transition: opacity $transition-fast;
-    flex-shrink: 0;
-  }
-
-  &:hover {
-    background: $color-surface-2;
-    border-color: $color-border-hover;
-    color: $color-text;
-    svg { opacity: 1; }
-  }
-
-  &.active {
-    background: $color-accent-grad;
-    border-color: transparent;
-    color: white;
-    box-shadow: 0 4px 15px rgba($color-accent-1, 0.3);
-    svg { opacity: 1; color: white; }
-  }
-}
-
-// Special overrides for certain export buttons (e.g. PDF if it's supposed to be slightly different)
-.format-pdf {
-  // Can add specific styles if needed
-}
-
 // Dynamic Form
 .dynamic-form {
   display: flex;
@@ -426,6 +384,18 @@ textarea.control-input {
     background: rgba($color-accent-1, 0.12);
     border-color: rgba($color-accent-1, 0.35);
   }
+
+  &:focus-visible {
+    outline: 2px solid $color-accent-1;
+    outline-offset: 2px;
+  }
+}
+
+// Footer actions inside a section (e.g. Reset design)
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -$space-1;
 }
 
 // Drop Zone (logo upload)

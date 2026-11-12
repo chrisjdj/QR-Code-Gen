@@ -23,7 +23,7 @@
     border-radius: $radius-full;
   }
 
-  &.dark-scan-mode {
+  :root[data-theme="dark"] & {
     background: #0a0a0a;
     .preview-frame {
       background: white;
@@ -182,6 +182,17 @@
     border: 1px solid rgba($color-info, 0.3);
     color: color-mix(in srgb, $color-info 70%, var(--color-text));
   }
+}
+
+.alert-leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alert { animation: none; }
+  .alert-leaving { transition: none; }
 }
 
 @keyframes alertIn {

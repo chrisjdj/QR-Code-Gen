@@ -1,165 +1,171 @@
 /**
  * customizer.js
- * Reads all customization control values from the DOM.
+ * Design controls (style, colors, gradient, logo settings): reading,
+ * serialising, restoring and wiring change events.
  */
 
-/** Initialize QR version dropdown (versions 1-40) */
-export function initVersionDropdown() {
-  const sel = document.getElementById('qrVersion')
-  for (let v = 1; v <= 40; v++) {
-    const opt = document.createElement('option')
-    opt.value = v
-    opt.textContent = `Version ${v}`
-    sel.appendChild(opt)
-  }
-}
+const $ = id => document.getElementById(id)
 
-/** Initialize all collapsible sections */
-export function initCollapsibles() {
-  document.querySelectorAll('.section-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetId = btn.getAttribute('aria-controls')
-      const content = document.getElementById(targetId)
-      const expanded = btn.getAttribute('aria-expanded') === 'true'
-      btn.setAttribute('aria-expanded', String(!expanded))
-      content.classList.toggle('hidden', expanded)
-    })
+/**
+ * Every persisted/shared design input. Serialise, restore and reset are all
+ * driven from this one list – add a control here and it just works.
+ */
+const DESIGN_FIELDS = [
+  'fgColor', 'bgColor', 'transparentBg',
+  'ecLevel', 'qrVersion',
+  'enableGradient', 'gradientType', 'gradientAngle', 'gradientColor1', 'gradientColor2',
+  'logoSize', 'logoMargin', 'logoRounded', 'logoShadow', 'logoBgColor',
+]
+
+/** Paired color pickers: swatch id → hex text input id */
+const COLOR_PAIRS = ['fgColor', 'bgColor', 'gradientColor1', 'gradientColor2', 'logoBgColor']
+
+/** Range inputs with a live value label */
+const RANGE_LABELS = { gradientAngle: 'gradientAngleVal', logoSize: 'logoSizeVal', logoMargin: 'logoMarginVal' }
+
+const HEX_RE = /^#[0-9A-Fa-f]{6}$/
+
+const activeStyle = attr => document.querySelector(`[data-${attr}].active`)?.dataset?.[attr]
+
+function setActiveStyle(attr, value) {
+  const btns = document.querySelectorAll(`[data-${attr}]`)
+  if (![...btns].some(b => b.dataset[attr] === value)) return
+  btns.forEach(b => {
+    const on = b.dataset[attr] === value
+    b.classList.toggle('active', on)
+    b.setAttribute('aria-checked', String(on))
+    b.tabIndex = on ? 0 : -1
   })
 }
 
-/** Read all current customization options from DOM */
-export function getCustomizerState() {
-  const fgColor     = document.getElementById('fgColor').value
-  const bgColor     = document.getElementById('bgColor').value
-  const transparent = document.getElementById('transparentBg').checked
-  const dotStyle    = document.querySelector('[data-dot].active')?.dataset.dot || 'square'
-  const eyeStyle    = document.querySelector('[data-eye].active')?.dataset.eye || 'square'
-  const ecLevel     = document.getElementById('ecLevel').value
-  const hasLogo     = !!document.getElementById('logoInput')?.__logoData
-  const logoSize    = parseFloat(document.getElementById('logoSize')?.value || 30) / 100
-  const logoMargin  = parseInt(document.getElementById('logoMargin')?.value || 5)
-
-  // Gradient
-  const gradEnabled = document.getElementById('enableGradient').checked
-  const gradient = gradEnabled ? {
-    enabled: true,
-    type:   document.getElementById('gradientType').value,
-    angle:  parseInt(document.getElementById('gradientAngle').value),
-    color1: document.getElementById('gradientColor1').value,
-    color2: document.getElementById('gradientColor2').value,
-  } : { enabled: false }
-
+/** Snapshot of the design controls, in the shape the QR engine consumes */
+export function getDesignOptions(logo) {
+  const transparent = $('transparentBg')?.checked || false
   return {
-    fgColor,
-    bgColor,
+    fgColor:     $('fgColor')?.value || '#000000',
+    bgColor:     transparent ? 'transparent' : ($('bgColor')?.value || '#ffffff'),
     transparent,
-    dotStyle,
-    eyeStyle,
-    ecLevel,
-    gradient,
-    logoSize,
-    logoMargin,
-    previewSize: 300,
+    dotStyle:    activeStyle('dot') || 'square',
+    eyeStyle:    activeStyle('eye') || 'square',
+    ecLevel:     $('ecLevel')?.value || 'M',
+    qrVersion:   parseInt($('qrVersion')?.value || '0', 10) || 0,
+    gradient: $('enableGradient')?.checked
+      ? {
+          enabled: true,
+          type:   $('gradientType')?.value || 'linear',
+          angle:  parseInt($('gradientAngle')?.value || '0', 10),
+          color1: $('gradientColor1')?.value || '#6366f1',
+          color2: $('gradientColor2')?.value || '#a855f7',
+        }
+      : { enabled: false },
+    logo,
+    logoSize:    parseFloat($('logoSize')?.value || '30') / 100,
+    logoMargin:  parseInt($('logoMargin')?.value || '5', 10),
+    logoBgColor: $('logoBgColor')?.value || '#ffffff',
+    logoRounded: $('logoRounded')?.checked || false,
+    logoShadow:  $('logoShadow')?.checked || false,
   }
 }
 
-/** Initialize dot style button group */
-export function initDotStyleSelector(onChange) {
-  document.querySelectorAll('[data-dot]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-dot]').forEach(b => {
-        b.classList.remove('active')
-        b.setAttribute('aria-pressed', 'false')
-      })
-      btn.classList.add('active')
-      btn.setAttribute('aria-pressed', 'true')
-      onChange()
+/** Raw control values, for persistence and share links */
+export function serializeDesign() {
+  const out = { dotStyle: activeStyle('dot'), eyeStyle: activeStyle('eye') }
+  for (const id of DESIGN_FIELDS) {
+    const el = $(id)
+    if (el) out[id] = el.type === 'checkbox' ? el.checked : el.value
+  }
+  return out
+}
+
+/** Apply a serialised design back onto the controls (unknown/invalid values are ignored) */
+export function applyDesign(design = {}) {
+  if (design.dotStyle) setActiveStyle('dot', design.dotStyle)
+  if (design.eyeStyle) setActiveStyle('eye', design.eyeStyle)
+  for (const id of DESIGN_FIELDS) {
+    const el = $(id)
+    const val = design[id]
+    if (!el || val === undefined || val === null) continue
+    if (el.type === 'checkbox') el.checked = !!val
+    else if (el.type === 'color' && !HEX_RE.test(val)) continue
+    else el.value = val
+  }
+  syncDependentUI()
+}
+
+/** Keep derived UI (hex text, labels, disabled/hidden groups) in sync with control values */
+function syncDependentUI() {
+  for (const id of COLOR_PAIRS) {
+    const text = $(`${id}Text`)
+    if (text && $(id)) text.value = $(id).value
+  }
+  for (const [id, labelId] of Object.entries(RANGE_LABELS)) {
+    if ($(id) && $(labelId)) $(labelId).textContent = $(id).value
+  }
+  const transparent = $('transparentBg')?.checked
+  if ($('bgColor'))     $('bgColor').disabled = transparent
+  if ($('bgColorText')) $('bgColorText').disabled = transparent
+  $('gradientControls')?.classList.toggle('hidden', !$('enableGradient')?.checked)
+  $('gradientAngleGroup')?.classList.toggle('hidden', $('gradientType')?.value === 'radial')
+}
+
+/** Radio-group semantics + arrow-key navigation for style button grids */
+function initStyleGroup(attr, onChange) {
+  const btns = [...document.querySelectorAll(`[data-${attr}]`)]
+  btns.forEach((btn, i) => {
+    btn.setAttribute('role', 'radio')
+    btn.removeAttribute('aria-pressed')
+    btn.addEventListener('click', () => { setActiveStyle(attr, btn.dataset[attr]); onChange() })
+    btn.addEventListener('keydown', e => {
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]
+      if (!step) return
+      e.preventDefault()
+      const next = btns[(i + step + btns.length) % btns.length]
+      next.focus()
+      next.click()
     })
   })
+  setActiveStyle(attr, activeStyle(attr) || btns[0]?.dataset[attr])
 }
 
-/** Initialize eye style button group */
-export function initEyeStyleSelector(onChange) {
-  document.querySelectorAll('[data-eye]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-eye]').forEach(b => {
-        b.classList.remove('active')
-        b.setAttribute('aria-pressed', 'false')
-      })
-      btn.classList.add('active')
-      btn.setAttribute('aria-pressed', 'true')
-      onChange()
+/**
+ * Wire every design control.
+ * @param {() => void} onChange – called on any change (callers should debounce)
+ */
+export function initDesignControls(onChange) {
+  // Populate QR version dropdown
+  const versionSel = $('qrVersion')
+  if (versionSel && versionSel.options.length <= 1) {
+    for (let v = 1; v <= 40; v++) versionSel.add(new Option(`Version ${v}`, String(v)))
+  }
+
+  initStyleGroup('dot', onChange)
+  initStyleGroup('eye', onChange)
+
+  // Color swatch ↔ hex text
+  for (const id of COLOR_PAIRS) {
+    const swatch = $(id)
+    const text = $(`${id}Text`)
+    if (!swatch || !text) continue
+    swatch.addEventListener('input', () => { text.value = swatch.value; onChange() })
+    text.addEventListener('input', () => {
+      let v = text.value.trim()
+      if (!v.startsWith('#')) v = `#${v}`
+      if (/^#[0-9A-Fa-f]{3}$/.test(v)) v = '#' + [...v.slice(1)].map(c => c + c).join('')
+      const valid = HEX_RE.test(v)
+      text.classList.toggle('invalid', !valid && text.value.length > 0)
+      text.setAttribute('aria-invalid', String(!valid))
+      if (valid) { swatch.value = v.toLowerCase(); onChange() }
     })
-  })
-}
+    text.addEventListener('blur', () => { text.value = swatch.value; text.classList.remove('invalid'); text.removeAttribute('aria-invalid') })
+  }
 
-/** Initialize color pair: swatch ↔ text input */
-export function initColorPair(swatchId, textId, onChange) {
-  const swatch = document.getElementById(swatchId)
-  const text   = document.getElementById(textId)
-  if (!swatch || !text) return
+  // Everything else: selects, checkboxes, ranges
+  const others = DESIGN_FIELDS.filter(id => !COLOR_PAIRS.includes(id))
+  for (const id of others) {
+    const el = $(id)
+    if (!el) continue
+    el.addEventListener(el.type === 'range' ? 'input' : 'change', () => { syncDependentUI(); onChange() })
+  }
 
-  swatch.addEventListener('input', () => {
-    text.value = swatch.value
-    onChange()
-  })
-
-  text.addEventListener('input', () => {
-    if (/^#[0-9A-Fa-f]{6}$/.test(text.value)) {
-      swatch.value = text.value
-      onChange()
-    }
-  })
-}
-
-/** Initialize gradient toggle + controls */
-export function initGradient(onChange) {
-  const toggle   = document.getElementById('enableGradient')
-  const controls = document.getElementById('gradientControls')
-  const typeEl   = document.getElementById('gradientType')
-  const angleEl  = document.getElementById('gradientAngle')
-  const angleVal = document.getElementById('gradientAngleVal')
-  const angleGroup = document.getElementById('gradientAngleGroup')
-
-  if (!toggle || !controls) return
-
-  toggle.addEventListener('change', () => {
-    controls.classList.toggle('hidden', !toggle.checked)
-    onChange()
-  })
-
-  typeEl?.addEventListener('change', () => {
-    angleGroup.style.display = typeEl.value === 'radial' ? 'none' : ''
-    onChange()
-  })
-
-  angleEl?.addEventListener('input', () => {
-    if (angleVal) angleVal.textContent = angleEl.value
-    onChange()
-  })
-
-  initColorPair('gradientColor1', 'gradientColor1Text', onChange)
-  initColorPair('gradientColor2', 'gradientColor2Text', onChange)
-}
-
-/** Initialize logo controls (size, margin) */
-export function initLogoControls(onChange) {
-  const sizeEl   = document.getElementById('logoSize')
-  const sizeVal  = document.getElementById('logoSizeVal')
-  const marginEl = document.getElementById('logoMargin')
-  const marginVal= document.getElementById('logoMarginVal')
-
-  sizeEl?.addEventListener('input', () => {
-    if (sizeVal) sizeVal.textContent = sizeEl.value
-    onChange()
-  })
-
-  marginEl?.addEventListener('input', () => {
-    if (marginVal) marginVal.textContent = marginEl.value
-    onChange()
-  })
-
-  document.getElementById('logoRounded')?.addEventListener('change', onChange)
-  document.getElementById('logoShadow')?.addEventListener('change', onChange)
-  initColorPair('logoBgColor', 'logoBgColorText', onChange)
+  syncDependentUI()
 }

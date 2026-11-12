@@ -69,7 +69,7 @@ The app runs at `http://localhost:5173`.
    git checkout -b feature/your-feature-name
    ```
 3. **Make your changes** — code + SCSS only, no CSS edits
-4. **Test manually** in your browser using `npm run dev`
+4. **Run the unit tests** with `npm test` and **test manually** in your browser using `npm run dev`
 5. **Commit** with a clear, conventional message:
    ```
    feat: add QR animation export

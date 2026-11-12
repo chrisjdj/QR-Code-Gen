@@ -1,114 +1,83 @@
 /**
  * logo-handler.js
- * Handles logo upload, FileReader processing, and logo state management.
+ * Reads user images and composites them onto a padded (optionally rounded /
+ * shadowed) background tile before they are embedded in the QR code.
  */
 
-export class LogoHandler {
-  constructor() {
-    this.logoDataUrl = null
-    this.onChange = null // callback when logo changes
-  }
+import { loadImage } from '../utils/download.js'
 
-  /** Initialize DOM event listeners */
-  init(onChange) {
-    this.onChange = onChange
-    const dropZone  = document.getElementById('logoDropZone')
-    const fileInput  = document.getElementById('logoInput')
-    const removeBtn  = document.getElementById('removeLogo')
+const MAX_LOGO_BYTES = 5 * 1024 * 1024
 
-    // Click to open file picker
-    dropZone.addEventListener('click', (e) => {
-      if (e.target !== fileInput) fileInput.click()
-    })
-
-    // File selected
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files[0]) this._processFile(e.target.files[0])
-    })
-
-    // Drag and drop
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault()
-      dropZone.classList.add('drag-over')
-    })
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('drag-over')
-    })
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault()
-      dropZone.classList.remove('drag-over')
-      const file = e.dataTransfer?.files[0]
-      if (file && file.type.startsWith('image/')) this._processFile(file)
-    })
-
-    // Keyboard accessibility
-    dropZone.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        fileInput.click()
-      }
-    })
-
-    // Paste support
-    document.addEventListener('paste', (e) => {
-      const items = e.clipboardData?.items
-      if (!items) return
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile()
-          if (file) {
-            this._processFile(file)
-            break
-          }
-        }
-      }
-    })
-
-    // Remove logo
-    removeBtn.addEventListener('click', () => this.removeLogo())
-  }
-
-  _processFile(file) {
+/** Read an image File into a data URL. Rejects non-images and very large files. */
+export function readImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith('image/')) return reject(new Error('Please choose an image file (PNG, JPG, SVG, WebP).'))
+    if (file.size > MAX_LOGO_BYTES) return reject(new Error('Image is larger than 5 MB. Please use a smaller logo.'))
     const reader = new FileReader()
-    reader.onload = (e) => {
-      this.logoDataUrl = e.target.result
-      this._updateUI()
-      this.onChange?.(this.logoDataUrl)
-    }
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(new Error('Could not read the image file.'))
     reader.readAsDataURL(file)
-  }
+  })
+}
 
-  _updateUI() {
-    const wrap    = document.getElementById('logoPreviewWrap')
-    const img     = document.getElementById('logoPreviewImg')
-    const controls= document.getElementById('logoControls')
-    const warning = document.getElementById('logoWarning')
-    const dropZone= document.getElementById('logoDropZone')
+function roundRectPath(ctx, x, y, size, r) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + size, y, x + size, y + size, r)
+  ctx.arcTo(x + size, y + size, x, y + size, r)
+  ctx.arcTo(x, y + size, x, y, r)
+  ctx.arcTo(x, y, x + size, y, r)
+  ctx.closePath()
+}
 
-    if (this.logoDataUrl) {
-      img.src = this.logoDataUrl
-      wrap.classList.remove('hidden')
-      controls.classList.remove('hidden')
-      warning.classList.remove('hidden')
-      dropZone.classList.add('hidden')
-    } else {
-      wrap.classList.add('hidden')
-      controls.classList.add('hidden')
-      warning.classList.add('hidden')
-      dropZone.classList.remove('hidden')
+async function composeLogo(src, bgColor, rounded, shadow) {
+  let img
+  try { img = await loadImage(src) } catch { return src }
+
+  const LOGO = 800
+  const TILE = 1000
+  const pad = shadow ? 80 : 0
+  const aspect = (img.width || 1) / (img.height || 1)
+  const drawW = aspect > 1 ? LOGO : LOGO * aspect
+  const drawH = aspect > 1 ? LOGO / aspect : LOGO
+
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = TILE + pad * 2
+  const ctx = canvas.getContext('2d')
+  const c = canvas.width / 2
+  const x = c - TILE / 2
+  const transparent = !bgColor || bgColor === 'transparent'
+
+  if (!transparent) {
+    if (shadow) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'
+      ctx.shadowBlur = 30
+      ctx.shadowOffsetY = 15
     }
+    ctx.fillStyle = bgColor
+    if (rounded) { roundRectPath(ctx, x, x, TILE, TILE * 0.2); ctx.fill() }
+    else ctx.fillRect(x, x, TILE, TILE)
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetY = 0
   }
 
-  removeLogo() {
-    this.logoDataUrl = null
-    document.getElementById('logoInput').value = ''
-    this._updateUI()
-    this.onChange?.(null)
-  }
+  ctx.save()
+  if (rounded) { roundRectPath(ctx, x, x, TILE, TILE * 0.2); ctx.clip() }
+  ctx.drawImage(img, c - drawW / 2, c - drawH / 2, drawW, drawH)
+  ctx.restore()
 
-  getLogo() {
-    return this.logoDataUrl
-  }
+  return canvas.toDataURL('image/png')
+}
+
+// Memoise: re-compositing a 1000px+ canvas on every slider tick is the
+// single most expensive part of a re-render. Only the last result is kept.
+let cache = { src: null, key: '', promise: null }
+
+export function processLogo(src, bgColor, rounded, shadow) {
+  const key = `${bgColor}|${rounded ? 1 : 0}|${shadow ? 1 : 0}`
+  if (cache.src === src && cache.key === key) return cache.promise
+  const promise = composeLogo(src, bgColor, rounded, shadow)
+  cache = { src, key, promise }
+  return promise
 }

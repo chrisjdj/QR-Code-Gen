@@ -13,9 +13,11 @@ Features shipped in the current release:
 - **Custom DPI Export** — Configurable resolution output (72–600 DPI) via `dpi.js`
 - **SEO Optimization** — Open Graph tags, JSON-LD structured data, `sitemap.xml`, `robots.txt`, and `og-image.png` for GitHub Pages
 - **Dark Mode** — Light/dark theme with CSS variable system; QR canvas background preserved correctly in dark mode
-- **Preset System** — Save, load, and manage design presets via localStorage
-- **Batch QR Generation** — CSV upload, multi-code generation and ZIP download
 - **Error Correction & QR Version Controls** — User-selectable error correction (L/M/Q/H) and manual QR version (1–40)
+- **Shareable Links** — Content + design encoded (base64url) in the URL fragment
+- **Persistence & Reset** — Content and design remembered in localStorage, one-click reset
+- **Scannability Warnings** — Contrast, inverted-colour and logo-size checks
+- **Copy Image to Clipboard**
 
 ---
 
@@ -23,6 +25,8 @@ Features shipped in the current release:
 
 Features planned for the immediate future:
 
+- **Preset System** — Save, load, and manage named design presets via localStorage
+- **Batch QR Generation** — CSV upload, multi-code generation and ZIP download
 - **QR Code Scanner** — Utilize the WebRTC camera API and browser-based scanning libraries (e.g., ZXing-js) to scan codes directly in-app
 - **Preset Import/Export** — Export saved presets as JSON and import them, enabling cross-device sharing of custom designs
 - **High-Contrast Accessibility Mode** — Enhance UI accessibility for users with visual impairments (WCAG 2.1 AA)

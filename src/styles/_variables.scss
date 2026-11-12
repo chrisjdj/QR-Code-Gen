@@ -3,6 +3,7 @@
 // =============================================
 
 :root {
+  color-scheme: dark;
   --color-bg:           #0f0f1a;
   --color-surface:      #16162a;
   --color-surface-2:    #1e1e35;
@@ -20,7 +21,9 @@
   --preview-border:     rgba(255, 255, 255, 0.06);
 }
 
-body.light-mode {
+// Light theme – toggled via <html data-theme> (set pre-paint in index.html)
+:root[data-theme="light"] {
+  color-scheme: light;
   --color-bg:           #f8fafc;
   --color-surface:      #ffffff;
   --color-surface-2:    #f1f5f9;
@@ -60,8 +63,9 @@ $color-danger:       #ef4444;
 $color-info:         #38bdf8;
 
 // Typography
-$font-sans:    'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-$font-mono:    'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+// System fonts only: no third-party font requests (privacy) and no layout shift
+$font-sans:    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-mono:    ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
 
 $text-xs:    0.75rem;
 $text-sm:    0.8125rem;

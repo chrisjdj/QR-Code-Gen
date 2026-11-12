@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] - 2026-11-12
+
+### Fixed
+- Form listeners stacked up on every QR-type switch, causing repeated renders/saves per keystroke
+- Share links failed to load when the base64 token contained `+` (now base64url, in the URL fragment; old links still work)
+- Calendar QR codes produced invalid iCalendar times (missing seconds); text fields are now escaped and lines use CRLF
+- vCard values with commas/semicolons/newlines broke the card
+- Email subject/body and crypto labels showed `+` instead of spaces
+- JPG export with a transparent background came out black
+- WiFi codes for open networks no longer include a password field
+- Service worker registered at the wrong path and cached forever; it now uses relative paths, network-first HTML and per-build cache names
+- Downloads could be cancelled in Safari/Firefox because the blob URL was revoked immediately
+- Out-of-order async renders could overwrite a newer preview
+- PDF export would have broken under obfuscation (dynamic import specifier was string-arrayed)
+
+### Changed
+- ~80% smaller initial JS (495 kB → 102 kB): jsPDF is loaded on demand
+- Removed the JavaScript obfuscator (smaller, faster bundle)
+- Design changes are debounced and the logo canvas is memoised (smooth slider/colour dragging)
+- Refactored `main.js` into the `components/`, `qr-engine/` and `utils/` modules; removed dead duplicates
+- Theme follows the system preference and is applied before first paint
+- System font stack (no Inter reference that was never loaded)
+- Custom export size is a single square size; logo margin scales with export size
+- Downloads are named after their content (e.g. `qr-wifi-MyNetwork.png`)
+- Canonical/OG/sitemap URLs point at `/web-tools/QR-Code-Gen/`
+
+### Added
+- Scannability warnings (low contrast, inverted colours, oversized logo)
+- Copy image to clipboard
+- Design persistence + "Reset design to defaults"
+- Shareable-link warning when it contains a WiFi password
+- PNG PWA icons (192, 512, maskable) and apple-touch-icon
+- Keyboard arrow navigation and radio semantics for style pickers; focus-visible styles
+- Vitest unit tests (`npm test`) and a CI workflow
+
+---
+
 ## [1.4.0] - 2026-03-09
 
 ### Changed

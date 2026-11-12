@@ -31,26 +31,28 @@ graph TD
 The logic is split into four main domains under `src/`:
 
 ### 1. `components/` (UI & User Interaction)
-Handles everything the user interacts with directly:
-- **`input-forms.js`**: Renders dynamic forms based on the selected QR type (e.g., showing SSID/Password fields for WiFi, or To/Subject/Body for Email).
-- **`customizer.js`**: Manages the design controls (colors, shapes, dot styles, gradients, logo settings).
-- **`error-handler.js`**: Centralized validation and error messaging (e.g., warning if data exceeds QR capacity, low-contrast alerts).
+- **`input-forms.js`**: `FORMS` field definitions per QR type and the dynamic form renderer. It does not attach listeners — `main.js` delegates once on the container.
+- **`customizer.js`**: Design controls. A single `DESIGN_FIELDS` list drives reading (`getDesignOptions`), persistence/share (`serializeDesign` / `applyDesign`) and reset. Style grids use radio semantics with arrow-key navigation.
+- **`error-handler.js`**: Toast alerts in an `aria-live` region. Messages are inserted as text, never HTML; an `id` replaces an existing alert.
 
 ### 2. `qr-engine/` (Core Data & Rendering)
-The heart of the application, managing data formulation and the actual drawing process:
-- **`payload-builder.js`**: Takes raw user input from the forms and formats it into standardized QR payloads (e.g., converting a phone number into a `tel:` URI, or building a `WIFI:` string).
-- **`generator.js`**: Wraps the underlying QR code library (`qr-code-styling`), handling debounced live-rendering to the DOM.
-- **`logo-handler.js`**: Uses the `FileReader` API to parse user-uploaded images and the `Canvas` API to resize, crop, and embed logos into the center of the QR code securely.
+- **`payload-builder.js`** *(pure)*: Form values → standard payloads (`mailto:`, `WIFI:`, vCard 3.0, iCalendar, BIP21 …) with correct escaping per format.
+- **`qr-options.js`** *(pure)*: Design state → `qr-code-styling` options. Shared by preview and every export so they can't drift apart.
+- **`scannability.js`** *(pure)*: Heuristic warnings (contrast < 3:1, inverted colours, large logo with low error correction).
+- **`generator.js`**: Renders the preview (off-DOM first, so a failed render keeps the previous code), exports PNG/SVG/JPG/WebP/PDF, copies to clipboard. jsPDF is dynamically imported.
+- **`logo-handler.js`**: Reads uploads (type/size checked) and composites the logo tile on a canvas. The result is memoised, so slider/colour drags don't redo the expensive canvas work.
 
 ### 3. `utils/` (Helpers)
-Standalone utility functions used across the application:
-- **`debounce.js`**: Prevents the QR engine from unnecessarily re-rendering on every single keystroke.
-- **`download.js`**: Extracts rendering data and generates downloadable blobs (PNG, SVG, JPG, WebP) and PDFs (via jsPDF).
-- **`color-utils.js`**: Helpers for parsing hex/RGB values and applying gradient configurations.
-- **`dpi.js`**: Handles high-resolution export logic, allowing users to choose DPI (72–600) for pixel-perfect output.
+- **`color-utils.js`**: WCAG luminance and contrast ratio.
+- **`download.js`**: Blob download (delayed URL revocation), descriptive filenames, image/canvas helpers.
+- **`dpi.js`**: Injects DPI metadata (PNG `pHYs`, JPEG JFIF).
+- **`share.js`**: UTF-8 + base64url encode/decode for share links (reads legacy `?config=` links too).
 
 ### 4. `main.js` (Application Entry Point)
-Bootstraps and wires all modules together, initializes state, binds event listeners, and handles theme toggling.
+Owns app state and wires modules together: debounced render pipeline (with a sequence guard against out-of-order async renders), type switching, logo input, theme, export buttons, share links and service-worker registration.
+
+### Tests
+`tests/` contains Vitest unit tests for the pure modules (`npm test`).
 
 ---
 
@@ -73,7 +75,7 @@ All styles are written using SCSS and compiled by Vite. The UI does not rely on 
 | `main.scss`        | Entry point — imports all partials          |
 
 ### Theme & Design Tokens (`_variables.scss`)
-Themes (Light and Dark modes) are implemented using CSS variables (CSS Custom Properties) injected at the `:root` and `[data-theme="dark"]` levels.
+Themes are CSS custom properties: dark values on `:root`, light overrides on `:root[data-theme="light"]`. An inline script in `<head>` sets `data-theme` before first paint (saved choice, else `prefers-color-scheme`), so there is no flash of the wrong theme.
 
 ```scss
 // Example Token Structure
@@ -118,6 +120,7 @@ By design, the application has complete data localization:
 
 1. **No Backend**: The app consists purely of static files (`index.html`, `.js`, compiled `.css`, standard assets).
 2. **Local Processing**: `FileReader`, `Canvas.toDataURL()`, and `Blob` APIs are used for all image parsing and file generation.
-3. **Storage**: Features like saved design presets are written exclusively to the browser's `localStorage`.
+3. **Storage**: Form content, design settings and theme are written only to the browser's `localStorage`.
 4. **Third-Party Requests**: The app avoids fetching external fonts or assets at runtime to prevent third-party tracking.
-5. **Offline-Capable**: The service worker (`sw.js`) caches all core assets, allowing full functionality without a network connection after first load.
+5. **Offline-Capable**: The service worker (`sw.js`) serves pages network-first (so new releases arrive immediately) and hashed assets cache-first. Each build stamps a new cache name, purging stale caches.
+6. **Share links** use the URL *fragment* (`#config=…`), which browsers never send to the server.

@@ -1,138 +1,171 @@
 /**
  * payload-builder.js
- * Builds correctly formatted QR payload strings for each QR type.
+ * Pure functions that turn form values into standard QR payload strings.
+ *
+ * Return contract for buildPayload():
+ *   ''   – not enough input yet (show placeholder)
+ *   null – input present but invalid (show placeholder)
+ *   str  – encodable payload
  */
 
-/**
- * Build QR payload from type and form data
- * @param {string} type - QR type key
- * @param {Object} data - Form field values
- * @returns {{ payload: string, error: string|null }}
- */
-export function buildPayload(type, data) {
-  try {
-    const payload = builders[type]?.(data)
-    if (!payload) return { payload: '', error: null }
-    return { payload, error: null }
-  } catch (err) {
-    return { payload: '', error: err.message }
+const CRLF = '\r\n'
+
+/** Escape text for vCard 3.0 property values (RFC 2426 §5) */
+export function escVcard(s) {
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/\r?\n/g, '\\n')
+    .replace(/([,;])/g, '\\$1')
+}
+
+/** Escape text for iCalendar TEXT values (RFC 5545 §3.3.11) */
+export function escIcal(s) {
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/\r?\n/g, '\\n')
+    .replace(/([,;])/g, '\\$1')
+}
+
+/** Escape WIFI: field values (ZXing spec) */
+export function escWifi(s) {
+  return String(s).replace(/[\\;,":]/g, c => '\\' + c)
+}
+
+/** `2026-11-12T09:30` or `2026-11-12T09:30:15` → `20261112T093000` / `20261112T093015` */
+export function formatIcalDate(dt) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(dt || ''))
+  if (!m) return null
+  const [, y, mo, d, h, mi, s = '00'] = m
+  return `${y}${mo}${d}T${h}${mi}${s}`
+}
+
+/** Build a query string with %20 for spaces (mailto:/crypto URIs must not use `+`) */
+function query(params) {
+  const parts = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && String(v) !== '')
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+  return parts.length ? '?' + parts.join('&') : ''
+}
+
+const stripSpaces = s => String(s || '').replace(/\s+/g, '')
+const trim = s => String(s ?? '').trim()
+
+const CRYPTO_SCHEMES = { BTC: 'bitcoin', ETH: 'ethereum', LTC: 'litecoin' }
+
+export function buildPayload(type, values = {}) {
+  switch (type) {
+    case 'url': {
+      let url = trim(values.url)
+      if (!url) return ''
+      // Accept bare domains like "example.com" by assuming https
+      if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = `https://${url}`
+      try {
+        const u = new URL(url)
+        if ((u.protocol === 'http:' || u.protocol === 'https:') && !u.hostname.includes('.') && u.hostname !== 'localhost') return null
+      } catch { return null }
+      return url
+    }
+
+    case 'text':
+      return trim(values.text)
+
+    case 'email': {
+      const to = trim(values.to)
+      if (!to) return ''
+      return `mailto:${to}${query({ subject: values.subject, body: values.body })}`
+    }
+
+    case 'phone': {
+      const phone = stripSpaces(values.phone)
+      return phone ? `tel:${phone}` : ''
+    }
+
+    case 'sms': {
+      const phone = stripSpaces(values.phone)
+      if (!phone) return ''
+      return `sms:${phone}${query({ body: values.message })}`
+    }
+
+    case 'whatsapp': {
+      const num = String(values.phone || '').replace(/\D/g, '')
+      if (!num) return ''
+      return `https://wa.me/${num}${query({ text: values.message })}`
+    }
+
+    case 'wifi': {
+      if (!values.ssid) return ''
+      const sec = values.security || 'WPA'
+      const parts = [`T:${sec}`, `S:${escWifi(values.ssid)}`]
+      if (sec !== 'nopass' && values.password) parts.push(`P:${escWifi(values.password)}`)
+      if (values.hidden) parts.push('H:true')
+      return `WIFI:${parts.join(';')};;`
+    }
+
+    case 'vcard': {
+      const first = trim(values.firstName)
+      const last = trim(values.lastName)
+      if (!first && !last) return ''
+      const lines = [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        `N:${escVcard(last)};${escVcard(first)};;;`,
+        `FN:${escVcard([first, last].filter(Boolean).join(' '))}`,
+      ]
+      if (values.org)     lines.push(`ORG:${escVcard(values.org)}`)
+      if (values.title)   lines.push(`TITLE:${escVcard(values.title)}`)
+      if (values.phone)   lines.push(`TEL;TYPE=CELL:${stripSpaces(values.phone)}`)
+      if (values.email)   lines.push(`EMAIL:${trim(values.email)}`)
+      if (values.url)     lines.push(`URL:${trim(values.url)}`)
+      if (values.address) lines.push(`ADR:;;${escVcard(values.address)};;;;`)
+      lines.push('END:VCARD')
+      return lines.join(CRLF)
+    }
+
+    case 'location': {
+      const q = trim(values.query)
+      if (q) return `geo:0,0?q=${encodeURIComponent(q)}`
+      if (values.lat === '' || values.lon === '' || values.lat == null || values.lon == null) return ''
+      const lat = Number(values.lat)
+      const lon = Number(values.lon)
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null
+      return `geo:${lat},${lon}`
+    }
+
+    case 'calendar': {
+      const title = trim(values.title)
+      if (!title || !values.start) return ''
+      const start = formatIcalDate(values.start)
+      if (!start) return null
+      const end = formatIcalDate(values.end)
+      const lines = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//QR Code Gen//EN',
+        'BEGIN:VEVENT',
+        `SUMMARY:${escIcal(title)}`,
+        `DTSTART:${start}`,
+      ]
+      // Ignore an end time that is not after the start
+      if (end && end > start) lines.push(`DTEND:${end}`)
+      if (values.location)    lines.push(`LOCATION:${escIcal(values.location)}`)
+      if (values.description) lines.push(`DESCRIPTION:${escIcal(values.description)}`)
+      lines.push('END:VEVENT', 'END:VCALENDAR')
+      return lines.join(CRLF)
+    }
+
+    case 'crypto': {
+      const address = trim(values.address)
+      if (!address) return ''
+      const coin = values.coin || 'BTC'
+      const scheme = CRYPTO_SCHEMES[coin] || coin.toLowerCase()
+      return `${scheme}:${address}${query({ amount: values.amount, label: values.label })}`
+    }
+
+    case 'raw': {
+      // Raw payloads are encoded verbatim (no trimming) unless whitespace-only
+      const s = String(values.payload ?? '')
+      return s.trim() ? s : ''
+    }
+
+    default:
+      return ''
   }
-}
-
-const builders = {
-  url({ url }) {
-    if (!url) return ''
-    const trimmed = url.trim()
-    if (!isValidUrl(trimmed)) throw new Error('Please enter a valid URL (include https://)')
-    return trimmed
-  },
-
-  text({ text }) {
-    return (text || '').trim()
-  },
-
-  email({ to, subject, body }) {
-    if (!to) return ''
-    const params = new URLSearchParams()
-    if (subject) params.set('subject', subject)
-    if (body) params.set('body', body)
-    const qs = params.toString()
-    return `mailto:${to}${qs ? '?' + qs : ''}`
-  },
-
-  phone({ phone }) {
-    if (!phone) return ''
-    return `tel:${phone.trim()}`
-  },
-
-  sms({ phone, message }) {
-    if (!phone) return ''
-    const body = message ? `?body=${encodeURIComponent(message)}` : ''
-    return `sms:${phone.trim()}${body}`
-  },
-
-  whatsapp({ phone, message }) {
-    if (!phone) return ''
-    const num = phone.replace(/\D/g, '')
-    const text = message ? `?text=${encodeURIComponent(message)}` : ''
-    return `https://wa.me/${num}${text}`
-  },
-
-  wifi({ ssid, password, security, hidden }) {
-    if (!ssid) return ''
-    const sec = security || 'WPA'
-    const pass = password ? password : ''
-    const hiddenFlag = hidden ? 'true' : 'false'
-    return `WIFI:T:${sec};S:${escapeWifi(ssid)};P:${escapeWifi(pass)};H:${hiddenFlag};;`
-  },
-
-  vcard({ firstName, lastName, org, title, phone, email, url, address }) {
-    if (!firstName && !lastName) return ''
-    const lines = [
-      'BEGIN:VCARD',
-      'VERSION:3.0',
-      `FN:${[firstName, lastName].filter(Boolean).join(' ')}`,
-      `N:${lastName || ''};${firstName || ''};;;`,
-    ]
-    if (org)     lines.push(`ORG:${org}`)
-    if (title)   lines.push(`TITLE:${title}`)
-    if (phone)   lines.push(`TEL;TYPE=CELL:${phone}`)
-    if (email)   lines.push(`EMAIL:${email}`)
-    if (url)     lines.push(`URL:${url}`)
-    if (address) lines.push(`ADR:;;${address};;;;`)
-    lines.push('END:VCARD')
-    return lines.join('\n')
-  },
-
-  location({ lat, lon, query }) {
-    if (query) return `geo:0,0?q=${encodeURIComponent(query)}`
-    if (!lat || !lon) return ''
-    return `geo:${lat},${lon}`
-  },
-
-  calendar({ title, start, end, location, description }) {
-    if (!title || !start) return ''
-    const fmt = (dt) => dt.replace(/[-:]/g, '').replace('T', 'T').slice(0, 15)
-    const lines = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//QR Code Gen//EN',
-      'BEGIN:VEVENT',
-      `SUMMARY:${title}`,
-      `DTSTART:${fmt(start)}`,
-    ]
-    if (end)         lines.push(`DTEND:${fmt(end)}`)
-    if (location)    lines.push(`LOCATION:${location}`)
-    if (description) lines.push(`DESCRIPTION:${description}`)
-    lines.push('END:VEVENT', 'END:VCALENDAR')
-    return lines.join('\n')
-  },
-
-  crypto({ coin, address, amount, label }) {
-    if (!address) return ''
-    const coinMap = { BTC: 'bitcoin', ETH: 'ethereum', LTC: 'litecoin' }
-    const scheme = coinMap[coin] || coin?.toLowerCase() || 'bitcoin'
-    const params = new URLSearchParams()
-    if (amount) params.set('amount', amount)
-    if (label)  params.set('label', label)
-    const qs = params.toString()
-    return `${scheme}:${address}${qs ? '?' + qs : ''}`
-  },
-
-  raw({ payload }) {
-    return (payload || '').trim()
-  },
-}
-
-function isValidUrl(str) {
-  try {
-    const url = new URL(str)
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
-
-function escapeWifi(str) {
-  return str.replace(/[\\;,":]/g, c => '\\' + c)
 }

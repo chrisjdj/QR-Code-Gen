@@ -1,47 +1,45 @@
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
-import obfuscator from 'vite-plugin-javascript-obfuscator'
+
+/** Stamp public/sw.js with a unique build id so each deploy busts the SW cache */
+function swBuildId() {
+  let outDir = 'dist'
+  return {
+    name: 'sw-build-id',
+    apply: 'build',
+    configResolved(config) { outDir = config.build.outDir },
+    closeBundle() {
+      const file = resolve(outDir, 'sw.js')
+      if (!existsSync(file)) return
+      const id = Date.now().toString(36)
+      writeFileSync(file, readFileSync(file, 'utf8').replaceAll('__BUILD_ID__', id))
+    },
+  }
+}
 
 export default defineConfig({
   base: '/web-tools/QR-Code-Gen/',
   root: '.',
   publicDir: 'public',
   plugins: [
-    obfuscator({
-      include: ['src/**/*.js', 'src/**/*.ts'],
-      exclude: [/node_modules/],
-      apply: 'build',
-      debugger: true,
-      options: {
-        compact: true,
-        controlFlowFlattening: true,
-        controlFlowFlatteningThreshold: 1,
-        deadCodeInjection: true,
-        deadCodeInjectionThreshold: 0.4,
-        debugProtection: false,
-        disableConsoleOutput: true,
-        identifierNamesGenerator: 'hexadecimal',
-        log: false,
-        numbersToExpressions: true,
-        renameGlobals: false,
-        stringArray: true,
-        stringArrayEncoding: ['base64'],
-        stringArrayBase64: true,
-        stringArrayThreshold: 0.75,
-        unicodeEscapeSequence: false
-      }
-    })
+    swBuildId(),
   ],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     minify: 'esbuild',
-    cssMinify: 'esbuild'
+    cssMinify: 'esbuild',
   },
   css: {
     preprocessorOptions: {
       scss: {
-        api: 'modern-compiler'
-      }
-    }
-  }
+        api: 'modern-compiler',
+      },
+    },
+  },
+  test: {
+    environment: 'node',
+    include: ['tests/**/*.test.js'],
+  },
 })
