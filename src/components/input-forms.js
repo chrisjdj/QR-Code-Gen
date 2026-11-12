@@ -75,9 +75,8 @@ function buildFieldHtml(f) {
   const id = `field_${f.id}`
 
   if (f.type === 'checkbox') {
-    return `<label class="checkbox-label form-field">
+    return `<label class="checkbox checkbox-label form-field">
       <input type="checkbox" id="${id}" name="${f.id}" />
-      <span class="checkbox-custom"></span>
       ${escHtml(f.label)}
     </label>`
   }
@@ -85,22 +84,22 @@ function buildFieldHtml(f) {
   const common = `id="${id}" name="${f.id}"${f.required ? ' required aria-required="true"' : ''}`
   let input
   if (f.type === 'textarea') {
-    input = `<textarea ${common} class="control-input" rows="3"${attr('placeholder', f.placeholder)}${attr('maxlength', f.maxLength)}></textarea>`
+    input = `<textarea ${common} class="textarea control-input" rows="3"${attr('placeholder', f.placeholder)}${attr('maxlength', f.maxLength)}></textarea>`
   } else if (f.type === 'select') {
     const opts = (f.options || []).map(o => {
       const [value, label] = Array.isArray(o) ? o : [o, o]
       return `<option value="${escHtml(value)}">${escHtml(label)}</option>`
     }).join('')
-    input = `<select ${common} class="control-select">${opts}</select>`
+    input = `<select ${common} class="select control-select">${opts}</select>`
   } else {
-    input = `<input type="${f.type}" ${common} class="control-input"${attr('placeholder', f.placeholder)}${attr('step', f.step)}${attr('min', f.min)}${attr('max', f.max)}${attr('maxlength', f.maxLength)} />`
+    input = `<input type="${f.type}" ${common} class="input control-input"${attr('placeholder', f.placeholder)}${attr('step', f.step)}${attr('min', f.min)}${attr('max', f.max)}${attr('maxlength', f.maxLength)} />`
   }
 
   const req = f.required ? '<span class="required-dot" aria-hidden="true">*</span>' : ''
-  const counter = f.maxLength ? `<span class="char-count" id="char_${f.id}" aria-live="off">0 / ${f.maxLength}</span>` : ''
+  const counter = f.maxLength ? `<span class="field__hint char-count" id="char_${f.id}" aria-live="off">0 / ${f.maxLength}</span>` : ''
 
-  return `<div class="form-field">
-    <label class="field-label" for="${id}">${escHtml(f.label)}${req}</label>
+  return `<div class="field form-field">
+    <label class="field__label field-label" for="${id}">${escHtml(f.label)}${req}</label>
     ${input}${counter}
   </div>`
 }

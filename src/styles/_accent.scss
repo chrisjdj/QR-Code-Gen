@@ -1,0 +1,22 @@
+// App accent — QR-Code-Gen (indigo). All pairs verified ≥4.5:1 / ≥3:1.
+@mixin light {
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-active: #3730a3;
+  --on-accent: #ffffff;
+  --accent-subtle-bg: #eef2ff;
+  --accent-subtle-border: #c7d2fe;
+  --accent-subtle-text: #4338ca;
+  --focus-ring: #4f46e5;
+}
+
+@mixin dark {
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-active: #c7d2fe;
+  --on-accent: #0a0a0b;
+  --accent-subtle-bg: rgb(129 140 248 / 0.14);
+  --accent-subtle-border: rgb(129 140 248 / 0.35);
+  --accent-subtle-text: #a5b4fc;
+  --focus-ring: #818cf8;
+}

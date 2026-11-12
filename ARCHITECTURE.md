@@ -58,41 +58,37 @@ Owns app state and wires modules together: debounced render pipeline (with a seq
 
 ## 🎨 Styling Architecture (SCSS)
 
-All styles are written using SCSS and compiled by Vite. The UI does not rely on any heavy CSS frameworks, instead using a custom styling architecture rooted in design tokens.
+All styles are written using SCSS and compiled by Vite. There is no CSS framework: the UI uses the token-based design system shared by every tool in the suite. [DESIGN.md](./DESIGN.md) is the full reference (tokens, breakpoints, components, accessibility rules).
 
 ### SCSS Partials
 
-| File               | Responsibility                              |
-|--------------------|----------------------------------------------|
-| `_variables.scss`  | Design tokens — colors, spacing, typography |
-| `_reset.scss`      | Base reset and box-model normalization       |
-| `_layout.scss`     | Two-panel (sidebar + preview) layout         |
-| `_sidebar.scss`    | Left control panel styles                   |
-| `_forms.scss`      | Input fields, selects, labels               |
-| `_buttons.scss`    | Button component styles & states            |
-| `_preview.scss`    | QR preview panel and download section       |
-| `_footer.scss`     | Footer layout and link styles               |
-| `main.scss`        | Entry point — imports all partials          |
+| File                | Shared? | Responsibility |
+|---------------------|---------|----------------|
+| `_tokens.scss`      | Shared  | Breakpoints and mixins (`up()`, `hover`, `coarse`), spacing/type/radius/z-index/motion scales, light and dark colour tokens |
+| `_theme.scss`       | Shared  | Applies tokens to `:root`, `prefers-color-scheme` and `data-theme` |
+| `_base.scss`        | Shared  | Reset, typography, focus ring, `.sr-only`, skip link, reduced motion |
+| `_components.scss`  | Shared  | Buttons, cards, fields, selects, checkboxes, sliders, badges, alerts/toasts, dropzone, checkerboard |
+| `_shell.scss`       | Shared  | Header, theme switch, tool layout, footer |
+| `_accent.scss`      | App     | Indigo accent for light and dark |
+| `_app.scss`         | App     | QR-only UI: type and style grids, colour inputs, logo upload, export rows, preview frame, layout override |
+| `main.scss`         | —       | Entry point; `@use`s the partials in that order |
 
 ### Theme & Design Tokens (`_variables.scss`)
-Themes are CSS custom properties: dark values on `:root`, light overrides on `:root[data-theme="light"]`. An inline script in `<head>` sets `data-theme` before first paint (saved choice, else `prefers-color-scheme`), so there is no flash of the wrong theme.
+Every colour is a CSS custom property, so the theme can change at runtime. Light is the default on `:root`; dark applies when the OS prefers dark and the user has not forced light, or when the user forces dark:
 
 ```scss
-// Example Token Structure
-:root {
-  --bg-primary: #ffffff;
-  --text-primary: #1a1a1a;
-  --accent-color: #0066cc;
+:root { @include t.light; @include a.light; }                 // default
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { @include t.dark; @include a.dark; }
 }
-
-[data-theme="dark"] {
-  --bg-primary: #121212;
-  --text-primary: #f5f5f5;
-  --accent-color: #66b3ff;
-}
+:root[data-theme='dark'] { @include t.dark; @include a.dark; }  // forced dark
 ```
 
-Components reference these variables, ensuring immediate and consistent visual updates when the theme is toggled.
+- Users pick **System** (default), **Light** or **Dark** in the header. The choice is stored in `localStorage['theme-preference']`; System removes the key.
+- An inline script in `<head>` applies the stored choice before first paint (no flash) and removes the legacy `theme` key.
+- `src/components/theme.js` wires the switch (a radiogroup with arrow keys; a cycle button on narrow screens), updates the media-qualified `theme-color` metas and syncs tabs via the `storage` event.
+- In System mode, live OS changes need no JavaScript: CSS and the `media`-qualified metas handle them.
+- Components use semantic tokens only (`--surface`, `--text-muted`, `--accent`…). QR colours are user data, so the preview sits on a neutral checkerboard and is never themed or inverted.
 
 > **Rule:** All styles must be written and compiled from `.scss` files only. Never write or edit `.css` files directly.
 
@@ -121,6 +117,6 @@ By design, the application has complete data localization:
 1. **No Backend**: The app consists purely of static files (`index.html`, `.js`, compiled `.css`, standard assets).
 2. **Local Processing**: `FileReader`, `Canvas.toDataURL()`, and `Blob` APIs are used for all image parsing and file generation.
 3. **Storage**: Form content, design settings and theme are written only to the browser's `localStorage`.
-4. **Third-Party Requests**: The app avoids fetching external fonts or assets at runtime to prevent third-party tracking.
+4. **Third-Party Requests**: None. The Inter font is bundled (Fontsource), and no external fonts, scripts or assets are fetched at runtime.
 5. **Offline-Capable**: The service worker (`sw.js`) serves pages network-first (so new releases arrive immediately) and hashed assets cache-first. Each build stamps a new cache name, purging stale caches.
 6. **Share links** use the URL *fragment* (`#config=…`), which browsers never send to the server.

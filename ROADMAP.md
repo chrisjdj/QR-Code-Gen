@@ -13,6 +13,7 @@ Features shipped in the current release:
 - **Custom DPI Export** — Configurable resolution output (72–600 DPI) via `dpi.js`
 - **SEO Optimization** — Open Graph tags, JSON-LD structured data, `sitemap.xml`, `robots.txt`, and `og-image.png` for GitHub Pages
 - **Dark Mode** — Light/dark theme with CSS variable system; QR canvas background preserved correctly in dark mode
+- **UI Redesign (v1.6.0)** — Clean product UI on the shared design system, a System / Light / Dark switch that follows the OS by default, mobile-first layout, WCAG 2.2 AA contrast in both themes
 - **Error Correction & QR Version Controls** — User-selectable error correction (L/M/Q/H) and manual QR version (1–40)
 - **Shareable Links** — Content + design encoded (base64url) in the URL fragment
 - **Persistence & Reset** — Content and design remembered in localStorage, one-click reset
@@ -29,7 +30,8 @@ Features planned for the immediate future:
 - **Batch QR Generation** — CSV upload, multi-code generation and ZIP download
 - **QR Code Scanner** — Utilize the WebRTC camera API and browser-based scanning libraries (e.g., ZXing-js) to scan codes directly in-app
 - **Preset Import/Export** — Export saved presets as JSON and import them, enabling cross-device sharing of custom designs
-- **High-Contrast Accessibility Mode** — Enhance UI accessibility for users with visual impairments (WCAG 2.1 AA)
+- **High-Contrast Accessibility Mode** — A dedicated high-contrast theme beyond the WCAG 2.2 AA baseline (`forced-colors` is already respected)
+- **Mobile Mini-Preview** — Keep a compact QR preview visible while scrolling the controls on phones
 
 ---
 
