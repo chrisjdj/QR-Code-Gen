@@ -1,19 +1,11 @@
-// =============================================
-// QR Code Gen – Main SCSS Entry
-// =============================================
-
-// 1. Design tokens (must be first)
-@use 'variables' as *;
-
-// 2. Base reset
-@use 'reset';
-
-// 3. Layout
-@use 'layout';
-
-// 4. Components
-@use 'sidebar';
-@use 'preview';
-@use 'forms';
-@use 'buttons';
-@use 'footer';
+// =============================================================================
+// QR Code Gen – style entry point.
+// Order matters: tokens/theme → base → shared components → shell → app.
+// The first five partials are the shared design system (keep them identical
+// across the tool suite); QR-specific styles live in _app.scss.
+// =============================================================================
+@use 'theme';
+@use 'base';
+@use 'components';
+@use 'shell';
+@use 'app';

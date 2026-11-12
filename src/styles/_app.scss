@@ -1,0 +1,451 @@
+// =============================================================================
+// QR Code Gen – app-specific components. Shared primitives live in
+// _components.scss / _shell.scss. Semantic tokens only; QR colours are user
+// data and are never themed.
+// =============================================================================
+@use 'tokens' as t;
+
+// ---- Layout ---------------------------------------------------------------------
+// Mobile: preview first, controls below, one page scroll.
+// ≥lg: controls on the left (fluid), preview on the right (fixed width, sticky).
+.qr-layout {
+  @include t.up(lg) {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+
+    .tool-layout__sidebar {
+      grid-column: 1;
+      position: static;
+      max-height: none;
+      overflow: visible;
+      padding: 0;
+      margin: 0;
+    }
+
+    .tool-layout__workspace {
+      grid-column: 2;
+      position: sticky;
+      top: calc(var(--header-height) + var(--space-6));
+    }
+  }
+}
+
+// ---- Collapsible card sections ------------------------------------------------------
+.card__heading {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-h-lg);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: left;
+
+  @include t.hover {
+    background: var(--surface-hover);
+  }
+
+  .toggle-icon {
+    color: var(--text-subtle);
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  &[aria-expanded='false'] .toggle-icon {
+    transform: rotate(-90deg);
+  }
+
+  &[aria-expanded='true'] {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+.collapsible > .card__body {
+  padding-top: var(--space-2);
+}
+
+// ---- Grids of fields ------------------------------------------------------------------
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+
+  @include t.up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-6);
+}
+
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+// ---- Dynamic content form (rendered by input-forms.js) --------------------------------
+.dynamic-form {
+  display: grid;
+  gap: var(--space-4);
+
+  @include t.up(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > .field:has(.textarea),
+    > .field:only-child,
+    > .checkbox {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .field__label {
+    justify-content: flex-start;
+    gap: var(--space-1);
+  }
+
+  .required-dot {
+    color: var(--danger-text);
+  }
+
+  .char-count {
+    align-self: flex-end;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// ---- QR type selector ---------------------------------------------------------------
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-2);
+
+  // 12 types → two even rows of six
+  @include t.up(sm) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.type-btn,
+.style-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+
+  @include t.hover {
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+
+  &.active {
+    border-color: var(--accent);
+    background: var(--accent-subtle-bg);
+    color: var(--accent-subtle-text);
+  }
+}
+
+.type-btn {
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 64px;
+  padding: var(--space-2) var(--space-1);
+  font-size: var(--text-xs);
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+// ---- Module / eye style grids ----------------------------------------------------------
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--space-2);
+}
+
+.style-btn {
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  white-space: nowrap;
+}
+
+// ---- Colour inputs ---------------------------------------------------------------------
+// Looks like an .input; the native swatch sits inside next to the hex field.
+.color-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h-lg);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+
+  @include t.hover {
+    border-color: var(--text-muted);
+  }
+
+  &:focus-within {
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--accent-subtle-border);
+  }
+
+  &:has(:disabled) {
+    opacity: 0.6;
+  }
+}
+
+.color-swatch {
+  flex-shrink: 0;
+  width: 40px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 2px;
+  }
+
+  &::-webkit-color-swatch {
+    border: 0;
+    border-radius: 4px;
+  }
+
+  &::-moz-color-swatch {
+    border: 0;
+    border-radius: 4px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.color-text {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: max(16px, var(--text-sm));
+  text-transform: lowercase;
+
+  @include t.up(md) {
+    font-size: var(--text-sm);
+  }
+
+  &:focus-visible {
+    outline: none; // ring is drawn by .color-input-wrap:focus-within
+  }
+
+  &.invalid {
+    color: var(--danger-text);
+  }
+}
+
+.color-input-wrap:has(.color-text.invalid) {
+  border-color: var(--danger);
+}
+
+.gradient-controls,
+.logo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.gradient-controls {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--divider);
+}
+
+// ---- Logo -------------------------------------------------------------------------------
+.logo-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.logo-preview-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.logo-preview-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+// ---- Export -----------------------------------------------------------------------------
+.custom-size-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.export-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+
+  @include t.up(sm) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .btn {
+    padding-inline: var(--space-2);
+  }
+
+  .btn.active {
+    border-color: var(--accent-subtle-border);
+  }
+}
+
+.export-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+// ---- Preview ------------------------------------------------------------------------------
+.preview-card .card__body {
+  align-items: center;
+}
+
+// Neutral checkerboard so transparent / dark QR backgrounds read correctly.
+.preview-frame {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 248px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  @include t.up(md) {
+    min-height: 340px;
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+#qrCanvas {
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+
+  &:empty {
+    display: none;
+  }
+
+  canvas,
+  svg {
+    width: 260px;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+
+    @include t.up(md) {
+      width: 300px;
+    }
+  }
+}
+
+.preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 28ch;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-subtle);
+  text-align: center;
+
+  p {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+
+  .ph-hole {
+    fill: var(--surface);
+  }
+}
+
+.preview-hint {
+  align-self: stretch;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+// ---- Toasts (error-handler.js) --------------------------------------------------------------
+.toast-region .alert {
+  transition:
+    opacity var(--duration-base) ease,
+    transform var(--duration-base) ease;
+}
+
+.alert-leaving {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.alert__close {
+  flex-shrink: 0;
+}
+
+.link-text {
+  color: var(--accent-subtle-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}

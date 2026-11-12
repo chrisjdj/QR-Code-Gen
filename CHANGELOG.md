@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2026-11-12
+
+### Changed
+- **Redesigned UI** on the design system shared by all the tools in the suite (see [DESIGN.md](./DESIGN.md)). The look is a clean product UI: neutral surfaces, an indigo accent, cards, subtle borders and shadows. Gradients and glow effects are gone.
+- **Theme switch.** A System / Light / Dark control in the header replaces the light/dark toggle in the preview panel.
+  - System is the default. It follows the OS setting and updates live when that setting changes.
+  - On phones the switch is a single button that cycles through the three modes.
+  - The choice is stored under `theme-preference` and shared with the other tools on the same origin. The old `theme` key is removed, so everyone starts on System once.
+- **Layout.**
+  - The whole page now scrolls as one; the panels no longer scroll separately, and the footer is reachable.
+  - On desktop (1024px and up) the preview is a sticky column beside the controls.
+  - On phones the preview comes first. Every layout works from 320px up with no horizontal scrolling.
+- **Preview.** The QR sits on a neutral checkerboard, so transparent and dark backgrounds read correctly. QR colours are still never themed.
+- **Alerts.** Alerts are floating, dismissible toasts: at the bottom on phones, top-right on desktop.
+- **Forms.** Form fields, selects, checkboxes, sliders, buttons and the logo dropzone use the shared components. All element IDs and share-link fields are unchanged.
+- **Font.** Inter Variable is self-hosted through Fontsource.
+- **Manifest.** The PWA manifest uses the new background and theme colours.
+
+### Fixed
+- A Google Fonts `@import` made a third-party request on every load for a font that was never used.
+- The preview canvas overflowed the screen on phones narrower than about 356px.
+- Sliders had no visible keyboard focus, and the gradient and logo colour inputs showed no focus ring.
+- In light mode, the sidebar scrollbar, select chevron and placeholder icon were hard-coded light colours.
+- Accent and status colours were compile-time Sass variables, so they could not adapt to the theme. They are now tokens checked for WCAG 2.2 AA contrast in both themes.
+- Touch targets were too small: the colour swatches are now 40px and the remove-logo button is 44px on touch devices.
+- The privacy badge hid its text with `font-size: 0`.
+- There was no skip link.
+
 ## [1.5.0] - 2026-11-12
 
 ### Fixed
@@ -28,10 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design changes are debounced and the logo canvas is memoised (smooth slider/colour dragging)
 - Refactored `main.js` into the `components/`, `qr-engine/` and `utils/` modules; removed dead duplicates
 - Theme follows the system preference and is applied before first paint
-- System font stack (no Inter reference that was never loaded)
+- System font stack (no Inter reference that was never loaded; note: a leftover Google Fonts import remained until 1.6.0)
 - Custom export size is a single square size; logo margin scales with export size
 - Downloads are named after their content (e.g. `qr-wifi-MyNetwork.png`)
-- Canonical/OG/sitemap URLs point at `/web-tools/QR-Code-Gen/`
+- Canonical/OG/sitemap URLs point at the standalone site `/QR-Code-Gen/`
 
 ### Added
 - Scannability warnings (low contrast, inverted colours, oversized logo)

@@ -6,7 +6,16 @@ A **100% client-side**, privacy-first QR Code Generator built with **Vanilla JS*
 
 ---
 
-https://github.com/user-attachments/assets/a26d9442-5e54-48c6-90f8-db8e69c7df37
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dark-desktop.png" />
+  <img alt="QR Code Gen: QR type picker, content and export controls beside a sticky live preview" src="docs/screenshots/light-desktop.png" width="1280" />
+</picture>
+
+| Light | Dark |
+|---|---|
+| <img alt="QR Code Gen on a phone, light theme" src="docs/screenshots/light-mobile.png" width="260" /> | <img alt="QR Code Gen on a phone, dark theme" src="docs/screenshots/dark-mobile.png" width="260" /> |
+
+Demo video (previous design): https://github.com/user-attachments/assets/a26d9442-5e54-48c6-90f8-db8e69c7df37
 
 ---
 
@@ -23,7 +32,8 @@ https://github.com/user-attachments/assets/a26d9442-5e54-48c6-90f8-db8e69c7df37
 - **Copy to clipboard** — copy the QR image straight into docs, chats or design tools
 - **Shareable links** — design + content encoded in the URL fragment (never sent to a server)
 - **Remembers your work** — content and design persist in localStorage, with one-click reset
-- **Dark Mode** — follows your system theme, with a manual light/dark toggle
+- **System / Light / Dark theme** — follows your OS setting by default (live), or pick Light or Dark in the header; the choice is shared with the other tools in the suite
+- **Mobile-first, accessible UI** — works from 320px phones to wide desktops, WCAG 2.2 AA contrast in both themes, full keyboard support
 - **PWA-ready** — service worker + manifest for offline installation and caching
 - **SEO-optimized** — Open Graph tags, sitemap, robots.txt, structured data
 - **Zero telemetry** — no API calls, cookies, or analytics
@@ -35,7 +45,8 @@ https://github.com/user-attachments/assets/a26d9442-5e54-48c6-90f8-db8e69c7df37
 | Layer       | Technology                  |
 |-------------|------------------------------|
 | Bundler     | [Vite](https://vitejs.dev/) v5 |
-| Styles      | SCSS (Sass)                 |
+| Styles      | SCSS (Sass) + shared design system ([DESIGN.md](./DESIGN.md)) |
+| Font        | Inter Variable (self-hosted via Fontsource) |
 | QR Engine   | [qr-code-styling](https://github.com/kozakdenys/qr-code-styling) v1.9 |
 | PDF Export  | [jsPDF](https://github.com/parallax/jsPDF) v2.5 (lazy-loaded) |
 | Tests       | [Vitest](https://vitest.dev/) |
@@ -59,6 +70,7 @@ qr-code-gen/
 │   ├── components/
 │   │   ├── input-forms.js    # Field definitions per QR type + dynamic form renderer
 │   │   ├── customizer.js     # Design controls: read, serialise, restore, wire events
+│   │   ├── theme.js          # System / Light / Dark theme switch
 │   │   └── error-handler.js  # Toast alerts (aria-live)
 │   ├── qr-engine/
 │   │   ├── payload-builder.js # Pure: form values → QR payload strings
@@ -71,7 +83,7 @@ qr-code-gen/
 │   │   ├── download.js       # Blob download, filenames, image helpers
 │   │   ├── dpi.js            # PNG pHYs / JPEG JFIF DPI injection
 │   │   └── share.js          # base64url share-link encode/decode
-│   ├── styles/               # SCSS partials (see ARCHITECTURE.md)
+│   ├── styles/               # Design system partials + app styles (see DESIGN.md)
 │   └── main.js               # Entry point: state + wiring
 ├── tests/                    # Vitest unit tests for the pure modules
 ├── index.html                # Single-page HTML shell
@@ -80,6 +92,8 @@ qr-code-gen/
 ├── ARCHITECTURE.md           # Technical architecture and data flow
 ├── CHANGELOG.md              # Version history
 ├── CONTRIBUTING.md           # Contribution guidelines
+├── DESIGN.md                 # Design system: tokens, theme, layout, components
+├── docs/screenshots/         # README screenshots
 ├── README.md                 # Project overview
 ├── requirement.md            # Product Requirements Specification
 ├── ROADMAP.md                # Planned future features

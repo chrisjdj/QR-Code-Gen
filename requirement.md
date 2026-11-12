@@ -188,14 +188,21 @@ All QR codes encode **data only** — no dynamic redirect tracking.
 - Design / customization controls
 - Always-visible scrollbar for discoverability
 
-### Right Panel (Preview)
-- Live QR code preview
+### Preview Panel
+- Live QR code preview on a neutral checkerboard (sticky beside the controls on desktop)
+
+### Export
 - Download buttons (PNG, SVG, JPG, WebP, PDF)
-- DPI selector
-- Batch generation section
+- Export size and DPI selectors
+- Copy image and share link
+- Batch generation section (planned, not implemented yet)
+
+### Header
+- Brand, privacy badge, link to the other tools
+- System / Light / Dark theme switch
 
 ### Footer
-- Project links
+- About text and feature list
 - Attribution (MIT license)
 
 ## 4.2 Real-Time Rendering
@@ -206,19 +213,23 @@ All QR codes encode **data only** — no dynamic redirect tracking.
 
 ## 4.3 Theme Support
 
-- Light mode (default)
-- Dark mode toggle
-- QR code canvas background preserved correctly in dark mode (does not invert)
+- Three modes: System (default, follows the OS live), Light, Dark
+- The choice is stored in localStorage (`theme-preference`) and shared with the other tools on the same origin
+- The theme is applied before first paint (no flash)
+- Both themes meet WCAG 2.2 AA contrast
+- QR code canvas colours are never themed or inverted
 
 ## 4.4 Responsive Design
 
-- Fully responsive across mobile, tablet, and desktop
-- Single-column layout on small screens
-- Two-panel layout on desktop (≥768px)
+- Mobile-first, from 320px upwards with no horizontal scrolling
+- Below 1024px: single column, preview first, then the controls
+- 1024px and up: two columns, controls plus a sticky preview
+- Touch targets at least 44px on touch devices
 
 ## 4.5 Accessibility
 
-- WCAG 2.1 compliant target
+- WCAG 2.2 AA target (contrast checked for every token pair in both themes)
+- Skip link and visible focus on every control
 - Keyboard accessible controls
 - ARIA labels on interactive elements
 - High-contrast mode consideration

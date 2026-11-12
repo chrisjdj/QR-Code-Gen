@@ -55,9 +55,12 @@ The app runs at `http://localhost:5173`.
 
 > **IMPORTANT:** All styles must be written in **SCSS** (`.scss` files only).  
 
-- Design tokens (colors, spacing, typography) live in `src/styles/_variables.scss`
-- Component styles have their own partial files (e.g., `_forms.scss`, `_buttons.scss`, `_footer.scss`)
-- Import new partials via `src/styles/main.scss`
+- Read [DESIGN.md](./DESIGN.md) first. Tokens live in `src/styles/_tokens.scss` and the indigo accent in `_accent.scss`.
+- Use semantic tokens (`var(--surface)`, `var(--text-muted)`, `var(--accent)`…). Never hard-code colours.
+- Reuse the shared components (`.btn`, `.card`, `.field`, `.select`, `.badge`, `.alert`…) from `_components.scss`. `_tokens`, `_theme`, `_base`, `_components` and `_shell` are shared with the other tools, so copy any change to those repos too.
+- QR-specific styles go in `_app.scss`. Import new partials via `src/styles/main.scss`.
+- Write mobile-first (`@include t.up(md)`), put hover styles inside `@include t.hover`, and check 320px, 768px and 1280px in both light and dark themes.
+- Keep the element IDs, `data-*` attributes and state classes that the JS uses. `DESIGN_FIELDS` IDs are part of share links.
 
 ---
 
@@ -114,7 +117,7 @@ Open a GitHub Issue with:
 - Browser name & version
 - Steps to reproduce
 - Expected vs. actual behavior
-- Screenshot or screen recording (if applicable)
+- Screenshot or screen recording (if applicable), and whether you were using the light or dark theme
 
 ---
 

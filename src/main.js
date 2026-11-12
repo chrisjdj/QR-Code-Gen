@@ -3,7 +3,9 @@
  * Owns app state and wires the UI modules together.
  */
 
+import '@fontsource-variable/inter'
 import './styles/main.scss'
+import { initThemeSwitch } from './components/theme.js'
 import { FORMS, renderForm, getFormValues, updateCharCount } from './components/input-forms.js'
 import { getDesignOptions, serializeDesign, applyDesign, initDesignControls } from './components/customizer.js'
 import { showAlert, clearAlert } from './components/error-handler.js'
@@ -34,7 +36,6 @@ const store = {
 }
 const FORM_KEY = type => `qr_${type}`
 const DESIGN_KEY = 'qr_design'
-const THEME_KEY = 'theme'
 
 // ─── Render pipeline ─────────────────────────────────────────────────────────
 let renderTimer = null
@@ -235,24 +236,6 @@ function initLogoHandler() {
   })
 }
 
-// ─── Theme ───────────────────────────────────────────────────────────────────
-// The initial theme is applied by an inline script in <head> to avoid a flash.
-function setTheme(theme, persist = true) {
-  document.documentElement.dataset.theme = theme
-  for (const [id, t] of [['lightMode', 'light'], ['darkMode', 'dark']]) {
-    $(id)?.classList.toggle('active', t === theme)
-    $(id)?.setAttribute('aria-pressed', String(t === theme))
-  }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0f0f1a' : '#f8fafc')
-  if (persist) { try { localStorage.setItem(THEME_KEY, theme) } catch {} }
-}
-
-function initTheme() {
-  $('lightMode')?.addEventListener('click', () => setTheme('light'))
-  $('darkMode')?.addEventListener('click', () => setTheme('dark'))
-  setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light', false)
-}
-
 // ─── Export ──────────────────────────────────────────────────────────────────
 function getExportSize() {
   const sel = $('exportSize')
@@ -375,7 +358,8 @@ function registerSW() {
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
 function init() {
-  initTheme()
+  // The stored theme is applied before first paint by the inline script in <head>
+  initThemeSwitch()
   initDesignControls(onDesignChange)
   state.defaultDesign = serializeDesign()
   const saved = store.get(DESIGN_KEY)
