@@ -19,7 +19,7 @@ function swBuildId() {
 }
 
 export default defineConfig({
-  base: '/web-tools/QR-Code-Gen/',
+  base: '/QR-Code-Gen/',
   root: '.',
   publicDir: 'public',
   plugins: [

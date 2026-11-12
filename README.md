@@ -2,7 +2,7 @@
 
 A **100% client-side**, privacy-first QR Code Generator built with **Vanilla JS**, **SCSS**, and **Vite**. No backend. No tracking. No data leaves your browser.
 
-**Live Demo:** [https://chrisjdj.github.io/web-tools/QR-Code-Gen/](https://chrisjdj.github.io/web-tools/QR-Code-Gen/)
+**Live Demo:** [https://chrisjdj.github.io/QR-Code-Gen/](https://chrisjdj.github.io/QR-Code-Gen/)
 
 ---
 
